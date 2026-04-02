@@ -476,9 +476,13 @@ async def _upload_character_image(client, char: dict, project_id: str) -> str | 
         return None
 
     try:
-        # Download image
+        # Download image (skip SSL verify — macOS Python often lacks root certs for GCS)
+        import ssl
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
         async with aiohttp.ClientSession() as session:
-            async with session.get(ref_url) as resp:
+            async with session.get(ref_url, ssl=ssl_ctx) as resp:
                 if resp.status != 200:
                     logger.error("Failed to download character image: HTTP %d", resp.status)
                     return None
@@ -813,9 +817,15 @@ async def _handle_generate_character_image(client, req: dict) -> dict:
         output_url = _extract_output_url(result, "GENERATE_IMAGES")
 
         if output_url:
-            # Step 2: Upload the generated image to get a proper UUID media_id.
-            # batchGenerateImages returns mediaGenerationId (CAMS...) but
-            # imageInputs[].name needs the UUID from uploadImage (media.name).
+            # Try to get UUID directly from generation response (avoids duplicate upload)
+            direct_mid = _extract_media_id(result, "GENERATE_IMAGES")
+            if direct_mid and _is_uuid(direct_mid):
+                await crud.update_character(char["id"], media_id=direct_mid, reference_image_url=output_url)
+                logger.info("%s '%s' ref image ready (no upload needed, %s): media_id=%s",
+                            entity_type, char["name"], aspect.split("_")[-1].lower(), direct_mid)
+                return result
+
+            # UUID not in response — upload to get one (creates duplicate in Google Flow)
             upload_mid = await _upload_character_image(client, {
                 "name": char["name"],
                 "reference_image_url": output_url,
