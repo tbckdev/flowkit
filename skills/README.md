@@ -20,6 +20,12 @@ Workflow skills for AI agents and humans. Each skill is a step-by-step recipe.
 | insert-scene | [insert-scene.md](insert-scene.md) | Multi-angle shots, cutaways, close-ups |
 | creative-mix | [creative-mix.md](creative-mix.md) | Analyze story + suggest all techniques combined |
 
+## Reference
+
+| Skill | File | Description |
+|-------|------|-------------|
+| camera-guide | [camera-guide.md](camera-guide.md) | Camera angles, movements, lighting, DOF for cinematic video prompts |
+
 ## Utilities
 
 | Skill | File | Description |

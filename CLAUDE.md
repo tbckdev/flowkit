@@ -23,8 +23,9 @@ curl -s http://127.0.0.1:8100/health
 6. **UUID extraction** — if a response gives `CAMS...` instead of UUID, extract UUID from the `fifeUrl` in the response (URL contains it: `/image/{UUID}?...`).
 7. **Cascade on regen** — regenerating an image auto-clears downstream video + upscale. Regenerating video auto-clears upscale.
 8. **Video prompts use sub-clip timing** — structure 8s video as time segments: `"0-3s: Luna walks to bed. 3-5s: Hand turns off lamp. 5-8s: Window view of starry sky."` The scene image is frame 0.
-9. **Voice descriptions on characters** — `voice_description` field (max ~30 words) auto-appended to video prompts. E.g. `"Soft gentle whisper with slight purring undertone"`.
-10. **No background music** — the worker auto-appends "No background music. Keep only natural sound effects." to all video prompts.
+9. **Use cinematic camera language** — each sub-clip should specify camera angle + movement + lighting. See `skills/camera-guide.md` for full reference. Example: `"0-3s: Low angle tracking shot following Hero, golden hour backlight. 3-6s: Slow push in to close-up, shallow DOF. 6-8s: Crane up to wide shot, volumetric light."` Follow the emotional arc: wide (opening) → medium+push in (rising) → close-up (peak) → pull back wide (release).
+10. **Voice descriptions on characters** — `voice_description` field (max ~30 words) auto-appended to video prompts. E.g. `"Soft gentle whisper with slight purring undertone"`.
+11. **No background music** — the worker auto-appends "No background music. Keep only natural sound effects." to all video prompts.
 
 ---
 
