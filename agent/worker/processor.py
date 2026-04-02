@@ -501,8 +501,8 @@ async def _handle_edit_image(client, req: dict, orientation: str) -> dict:
     if not source_media_id:
         return {"error": "No source image to edit — generate a scene image first"}
 
-    # Edit prompt from request, fallback to scene prompt
-    edit_prompt = req.get("edit_prompt") or scene.get("prompt", "")
+    # Scene prompt is source of truth for edit operations
+    edit_prompt = scene.get("image_prompt") or scene.get("prompt", "")
 
     return await client.edit_image(
         prompt=edit_prompt, source_media_id=source_media_id,
@@ -915,7 +915,7 @@ async def _update_scene_from_result(req: dict, orientation: str, media_id: str, 
     req_type = req["type"]
     updates = {}
 
-    if req_type == "GENERATE_IMAGE":
+    if req_type in ("GENERATE_IMAGE", "EDIT_IMAGE"):
         # Set new image data
         updates[f"{prefix}_image_media_id"] = media_id
         updates[f"{prefix}_image_url"] = output_url

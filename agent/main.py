@@ -18,6 +18,7 @@ from agent.api.requests import router as requests_router
 from agent.api.flow import router as flow_router
 from agent.worker.processor import process_pending_requests
 from agent.services.flow_client import get_flow_client
+from agent.sdk import init_sdk
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -59,6 +60,8 @@ async def run_ws_server():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    ops = init_sdk(get_flow_client())
+    logger.info("SDK initialized (OperationService ready)")
     logger.info("Google Flow Agent starting on %s:%d", API_HOST, API_PORT)
 
     # Start background tasks

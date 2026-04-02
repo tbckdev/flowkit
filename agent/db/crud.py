@@ -30,7 +30,7 @@ _COLUMNS = {
               "horizontal_upscale_url", "horizontal_upscale_media_id", "horizontal_upscale_status",
               "vertical_end_scene_media_id", "horizontal_end_scene_media_id",
               "trim_start", "trim_end", "duration", "display_order", "updated_at"},
-    "request": {"status", "request_id", "media_id", "output_url", "error_message", "retry_count", "edit_prompt", "source_media_id", "updated_at"},
+    "request": {"status", "request_id", "media_id", "output_url", "error_message", "retry_count", "source_media_id", "updated_at"},
 }
 
 
@@ -212,14 +212,14 @@ async def list_scenes(video_id: str) -> list[dict]:
 async def create_request(req_type: str, orientation: str = None,
                          scene_id: str = None, character_id: str = None,
                          project_id: str = None, video_id: str = None,
-                         edit_prompt: str = None, source_media_id: str = None) -> dict:
+                         source_media_id: str = None, **_kw) -> dict:
     db = await get_db()
     rid, now = _uuid(), _now()
     async with _db_lock:
         await db.execute(
-            """INSERT INTO request (id,project_id,video_id,scene_id,character_id,type,orientation,edit_prompt,source_media_id,created_at,updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (rid, project_id, video_id, scene_id, character_id, req_type, orientation, edit_prompt, source_media_id, now, now))
+            """INSERT INTO request (id,project_id,video_id,scene_id,character_id,type,orientation,source_media_id,created_at,updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (rid, project_id, video_id, scene_id, character_id, req_type, orientation, source_media_id, now, now))
         await db.commit()
     return await _get_with_db(db, "request", "id", rid)
 

@@ -10,7 +10,6 @@ class RequestCreate(BaseModel):
     character_id: Optional[str] = None
     project_id: Optional[str] = None
     video_id: Optional[str] = None
-    edit_prompt: Optional[str] = None
     source_media_id: Optional[str] = None
 
     @model_validator(mode="after")
@@ -45,7 +44,6 @@ class Request(BaseModel):
     output_url: Optional[str] = None
     error_message: Optional[str] = None
     retry_count: int = 0
-    edit_prompt: Optional[str] = None
     source_media_id: Optional[str] = None
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
