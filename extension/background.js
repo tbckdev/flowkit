@@ -12,6 +12,7 @@ const API_KEY = 'AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY';
 let ws = null;
 let flowKey = null;
 let state = 'off'; // off | idle | running
+let manualDisconnect = false;
 let metrics = {
   tokenCapturedAt: null,
   requestCount: 0,
@@ -20,13 +21,36 @@ let metrics = {
   lastError: null,
 };
 
+// ─── Request Log ────────────────────────────────────────────
+
+let requestLog = [];
+
+function addRequestLog(entry) {
+  requestLog.unshift(entry);
+  if (requestLog.length > 100) requestLog.pop();
+  broadcastRequestLog();
+}
+
+function updateRequestLog(id, updates) {
+  const entry = requestLog.find((e) => e.id === id);
+  if (entry) Object.assign(entry, updates);
+  broadcastRequestLog();
+}
+
+function broadcastRequestLog() {
+  chrome.runtime.sendMessage({ type: 'REQUEST_LOG_UPDATE', log: requestLog }).catch(() => {});
+}
+
 // ─── Startup ────────────────────────────────────────────────
 
 chrome.runtime.onInstalled.addListener(init);
 chrome.runtime.onStartup.addListener(init);
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'reconnect') connectToAgent();
   if (alarm.name === 'keepAlive') keepAlive();
+  if (alarm.name === 'token-refresh') {
+    await captureTokenFromFlowTab();
+  }
 });
 
 async function init() {
@@ -65,9 +89,29 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ['requestHeaders', 'extraHeaders'],
 );
 
+async function captureTokenFromFlowTab() {
+  const tabs = await chrome.tabs.query({
+    url: ['https://labs.google/fx/tools/flow*', 'https://labs.google/fx/*/tools/flow*'],
+  });
+  if (!tabs.length) {
+    console.log('[FlowAgent] No Flow tab found for token refresh');
+    return;
+  }
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      files: ['content.js'],
+    });
+    console.log('[FlowAgent] Token refresh triggered on Flow tab');
+  } catch (e) {
+    console.error('[FlowAgent] Token refresh failed:', e);
+  }
+}
+
 // ─── WebSocket to Agent ─────────────────────────────────────
 
 function connectToAgent() {
+  if (manualDisconnect) return;
   if (ws?.readyState === WebSocket.CONNECTING) return;
   if (ws?.readyState === WebSocket.OPEN) return;
 
@@ -83,6 +127,9 @@ function connectToAgent() {
     console.log('[FlowAgent] Connected to agent');
     chrome.alarms.clear('reconnect');
     setState('idle');
+
+    // Hourly token refresh alarm
+    chrome.alarms.create('token-refresh', { periodInMinutes: 60 });
 
     // Send current state
     ws.send(JSON.stringify({
@@ -108,6 +155,7 @@ function connectToAgent() {
           result: {
             state,
             flowKeyPresent: !!flowKey,
+            manualDisconnect,
             tokenAge: metrics.tokenCapturedAt ? Date.now() - metrics.tokenCapturedAt : null,
             metrics,
           },
@@ -122,7 +170,8 @@ function connectToAgent() {
 
   ws.onclose = () => {
     setState('off');
-    scheduleReconnect();
+    chrome.alarms.clear('token-refresh');
+    if (!manualDisconnect) scheduleReconnect();
   };
 
   ws.onerror = (e) => {
@@ -186,7 +235,23 @@ async function solveCaptcha(requestId, captchaAction) {
   });
 
   if (!tabs.length) {
-    return { error: 'NO_FLOW_TAB' };
+    // Auto-open Flow tab and wait briefly before returning error
+    try {
+      await chrome.tabs.create({ url: 'https://labs.google/fx/tools/flow', active: false });
+      await sleep(3000);
+      // Retry tab query after opening
+      const retryTabs = await chrome.tabs.query({
+        url: ['https://labs.google/fx/tools/flow*', 'https://labs.google/fx/*/tools/flow*'],
+      });
+      if (!retryTabs.length) return { error: 'NO_FLOW_TAB' };
+      const resp = await Promise.race([
+        requestCaptchaFromTab(retryTabs[0].id, requestId, captchaAction),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('CAPTCHA_TIMEOUT')), 30000)),
+      ]);
+      return resp;
+    } catch (e) {
+      return { error: e.message || 'NO_FLOW_TAB' };
+    }
   }
 
   try {
@@ -229,6 +294,9 @@ async function handleTrpcRequest(msg) {
   setState('running');
   metrics.requestCount++;
 
+  const logId = id;
+  addRequestLog({ id: logId, type: 'trpc', time: new Date().toISOString(), status: 'processing', error: null, outputUrl: null });
+
   const fetchHeaders = { 'Content-Type': 'application/json', ...headers };
   if (flowKey) {
     fetchHeaders['authorization'] = `Bearer ${flowKey}`;
@@ -244,12 +312,14 @@ async function handleTrpcRequest(msg) {
     const data = await resp.json();
     metrics.successCount++;
     chrome.storage.local.set({ metrics });
+    updateRequestLog(logId, { status: 'success' });
     sendToAgent({ id, status: resp.status, data });
   } catch (e) {
     console.error('[FlowAgent] tRPC request failed:', e);
     metrics.failedCount++;
     metrics.lastError = e.message || 'TRPC_FETCH_FAILED';
     chrome.storage.local.set({ metrics });
+    updateRequestLog(logId, { status: 'failed', error: e.message || 'TRPC_FETCH_FAILED' });
     sendToAgent({ id, error: e.message || 'TRPC_FETCH_FAILED' });
   } finally {
     setState('idle');
@@ -273,6 +343,9 @@ async function handleApiRequest(msg) {
   setState('running');
   metrics.requestCount++;
 
+  const logId = id;
+  addRequestLog({ id: logId, type: 'api', time: new Date().toISOString(), status: 'processing', error: null, outputUrl: null });
+
   try {
     // Step 1: Solve captcha if needed
     let captchaToken = null;
@@ -287,6 +360,7 @@ async function handleApiRequest(msg) {
         metrics.failedCount++;
         metrics.lastError = `CAPTCHA_FAILED: ${err}`;
         chrome.storage.local.set({ metrics });
+        updateRequestLog(logId, { status: 'failed', error: `CAPTCHA_FAILED: ${err}` });
         setState('idle');
         return;
       }
@@ -315,6 +389,7 @@ async function handleApiRequest(msg) {
       metrics.failedCount++;
       metrics.lastError = 'NO_FLOW_KEY';
       chrome.storage.local.set({ metrics });
+      updateRequestLog(logId, { status: 'failed', error: 'NO_FLOW_KEY' });
       setState('idle');
       return;
     }
@@ -347,9 +422,11 @@ async function handleApiRequest(msg) {
     if (response.ok) {
       metrics.successCount++;
       metrics.lastError = null;
+      updateRequestLog(logId, { status: 'success' });
     } else {
       metrics.failedCount++;
       metrics.lastError = `API_${response.status}`;
+      updateRequestLog(logId, { status: 'failed', error: `API_${response.status}` });
     }
   } catch (e) {
     sendToAgent({
@@ -359,6 +436,7 @@ async function handleApiRequest(msg) {
     });
     metrics.failedCount++;
     metrics.lastError = e.message;
+    updateRequestLog(logId, { status: 'failed', error: e.message || 'API_REQUEST_FAILED' });
   }
 
   chrome.storage.local.set({ metrics });
@@ -383,24 +461,66 @@ function broadcastStatus() {
 chrome.runtime.onMessage.addListener((msg, _, reply) => {
   if (msg.type === 'STATUS') {
     reply({
-      state,
+      connected: ws?.readyState === WebSocket.OPEN,
       agentConnected: ws?.readyState === WebSocket.OPEN,
       flowKeyPresent: !!flowKey,
+      manualDisconnect,
       tokenAge: metrics.tokenCapturedAt ? Date.now() - metrics.tokenCapturedAt : null,
-      metrics,
+      metrics: {
+        requestCount: metrics.requestCount,
+        successCount: metrics.successCount,
+        failedCount: metrics.failedCount,
+        lastError: metrics.lastError,
+      },
+      state,
     });
+  }
+
+  if (msg.type === 'DISCONNECT') {
+    manualDisconnect = true;
+    if (ws) ws.close();
+    reply({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'RECONNECT') {
+    manualDisconnect = false;
+    connectToAgent();
+    reply({ ok: true });
+    return true;
+  }
+
+  if (msg.type === 'REQUEST_LOG') {
+    reply({ log: requestLog });
+    return true;
+  }
+
+  if (msg.type === 'OPEN_FLOW_TAB') {
+    chrome.tabs.query({
+      url: ['https://labs.google/fx/tools/flow*', 'https://labs.google/fx/*/tools/flow*'],
+    }).then((tabs) => {
+      if (tabs.length) {
+        chrome.tabs.update(tabs[0].id, { active: true });
+        reply({ ok: true, tabId: tabs[0].id });
+      } else {
+        chrome.tabs.create({ url: 'https://labs.google/fx/tools/flow' })
+          .then((tab) => reply({ ok: true, tabId: tab.id }))
+          .catch((e) => reply({ error: e.message }));
+      }
+    }).catch((e) => reply({ error: e.message }));
+    return true;
+  }
+
+  if (msg.type === 'REFRESH_TOKEN') {
+    captureTokenFromFlowTab()
+      .then(() => reply({ ok: true }))
+      .catch((e) => reply({ error: e.message }));
+    return true;
   }
 
   if (msg.type === 'TEST_CAPTCHA') {
     solveCaptcha(`test-${Date.now()}`, msg.pageAction || 'IMAGE_GENERATION')
       .then((r) => reply(r))
-      .catch((e) => reply({ error: e.message }));
-    return true;
-  }
-
-  if (msg.type === 'OPEN_FLOW_TAB') {
-    chrome.tabs.create({ url: 'https://labs.google/fx/tools/flow' })
-      .then(() => reply({ ok: true }))
       .catch((e) => reply({ error: e.message }));
     return true;
   }

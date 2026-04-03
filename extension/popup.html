@@ -3,28 +3,18 @@
 <head>
   <meta charset="utf-8">
   <style>
-    body { width: 300px; padding: 16px; font-family: system-ui; background: #1a1a2e; color: #e0e0e0; }
-    h2 { margin: 0 0 12px; color: #00d4ff; font-size: 14px; }
-    .status { padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; font-size: 12px; }
-    .connected { background: #0a3d0a; border: 1px solid #3fb950; }
-    .disconnected { background: #3d0a0a; border: 1px solid #f85149; }
-    .stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px; }
-    .label { color: #8b949e; }
-    .value { color: #e0e0e0; font-weight: 600; }
-    button { margin-top: 8px; padding: 6px 12px; background: #238636; color: #fff; border: none;
-             border-radius: 6px; cursor: pointer; font-size: 11px; width: 100%; }
-    button:hover { background: #2ea043; }
-    button.secondary { background: #30363d; }
-    button.secondary:hover { background: #484f58; }
+    body { width: 220px; padding: 16px; font-family: 'DM Mono', 'Fira Code', monospace;
+           background: #0d0d1a; color: #e2e8f0; text-align: center; }
+    p { font-size: 10px; color: #64748b; margin: 10px 0 0; letter-spacing: 0.04em; }
+    button { width: 100%; padding: 9px 12px; background: #1d4ed8; color: #fff; border: 1px solid #3b82f6;
+             border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 11px;
+             font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    button:hover { background: #3b82f6; }
   </style>
 </head>
 <body>
-  <h2>🔗 Google Flow Agent</h2>
-  <div id="agent-status" class="status disconnected">Checking...</div>
-  <div id="token-status" class="status disconnected">No token</div>
-  <div id="stats"></div>
-  <button id="btn-test" class="secondary">🧪 Test Captcha</button>
-  <button id="btn-flow">🌐 Open Flow Tab</button>
+  <button id="btn-panel">Open Side Panel</button>
+  <p>Use the side panel for the full dashboard</p>
   <script src="popup.js"></script>
 </body>
 </html>
