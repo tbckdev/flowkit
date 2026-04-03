@@ -590,7 +590,7 @@ async def _build_video_prompt(base_prompt: str, scene: dict, project_id: str | N
             if voices:
                 parts.append("Character voices: " + ". ".join(voices) + ".")
 
-    parts.append("Audio: No background music. Keep only natural sound effects and ambient sounds.")
+    parts.append("Audio: No background music. No narration. No voiceover. No storytelling voice. Keep only natural sound effects and ambient sounds.")
     return " ".join(parts)
 
 
