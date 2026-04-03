@@ -55,6 +55,34 @@ async def _tracked(req: dict, active: set):
         active.discard(req["id"])
 
 
+async def _prerequisites_met(req: dict, orientation: str) -> bool:
+    """Check if prerequisites are ready. Returns False to defer (stay PENDING)."""
+    req_type = req.get("type", "")
+    prefix = "vertical" if orientation == "VERTICAL" else "horizontal"
+
+    # Video gen needs scene image to be ready
+    if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+        scene = await crud.get_scene(req.get("scene_id"))
+        if not scene:
+            return True  # let _dispatch handle "scene not found"
+        if not scene.get(f"{prefix}_image_media_id"):
+            return False
+
+    # Edit requests need source media
+    if req_type in ("EDIT_IMAGE", "EDIT_CHARACTER_IMAGE"):
+        if not req.get("source_media_id"):
+            if req_type == "EDIT_CHARACTER_IMAGE":
+                char = await crud.get_character(req.get("character_id"))
+                if not char or not char.get("media_id"):
+                    return False
+            elif req_type == "EDIT_IMAGE":
+                scene = await crud.get_scene(req.get("scene_id"))
+                if not scene or not scene.get(f"{prefix}_image_media_id"):
+                    return False
+
+    return True
+
+
 async def _process_one(req: dict):
     rid, req_type = req["id"], req["type"]
     orientation = req.get("orientation", "VERTICAL")
@@ -62,6 +90,11 @@ async def _process_one(req: dict):
     if await _is_already_completed(req, orientation):
         logger.info("Request %s skipped — already COMPLETED", rid[:8])
         await crud.update_request(rid, status="COMPLETED", error_message="skipped: already completed")
+        return
+
+    # Check prerequisites before dispatching — don't burn retries on missing deps
+    if not await _prerequisites_met(req, orientation):
+        logger.debug("Request %s deferred — prerequisites not met", rid[:8])
         return
 
     logger.info("Processing request %s type=%s", rid[:8], req_type)
