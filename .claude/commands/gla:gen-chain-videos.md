@@ -55,6 +55,30 @@ The worker automatically reads `vertical_end_scene_media_id` and passes it as `e
 
 Poll every 15s. Max wait: 600s per scene.
 
+## Known Limitation: Concat Gap
+
+**Problem:** When concatenating chained videos, the endImage frames of scene N overlap with the startImage frames of scene N+1 — both are the same image. This produces **10-16 static/duplicate frames (~0.4-0.7s)** at each cut point where nothing moves.
+
+```
+Scene 1 video: [action...] [endImage = scene2 still] ← 10-16 frames
+Scene 2 video: [startImage = scene2 still] [action...] ← 10-16 frames
+Concat result:  ...action → [~0.8-1.4s static gap] → action...
+```
+
+**Mitigations:**
+- **Trim overlap** — use `trim_start` / `trim_end` on scenes to cut the static frames before concat. Typically trim 0.4-0.7s from the end of scene N and/or the start of scene N+1.
+- **Don't overuse chaining** — only chain scenes that truly need smooth visual continuity (same location, continuous action). For scene changes (new location, time jump), use ROOT without endImage — a hard cut is more natural.
+- **Mix techniques** — alternate between chained (CONTINUATION) and unchained (ROOT) scenes. Hard cuts between different locations feel intentional; gaps between continuous action feel broken.
+
+**When to chain vs not:**
+
+| Situation | Recommendation |
+|-----------|---------------|
+| Same location, continuous action | CONTINUATION (chain) |
+| Location change, time jump | ROOT (hard cut — no gap) |
+| Dramatic moment, reaction shot | INSERT (hard cut — intentional) |
+| Dream/flashback transition | ROOT or R2V (stylistic break) |
+
 ## Step 4: Output
 
 Print table:
@@ -62,3 +86,4 @@ Print table:
 |-------|-------|-------|---------------|-------------|----------|
 
 Print: "Chained videos ready. Run /gla:concat <VID> to merge."
+Remind: "Check concat gaps — trim 0.4-0.7s overlap at chain boundaries if needed."

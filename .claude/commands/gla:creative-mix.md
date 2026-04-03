@@ -11,10 +11,40 @@ Smooth transitions between scenes using start+end frames.
 - **When:** Sequential scenes that should flow into each other
 - **How:** Set `vertical_end_scene_media_id` on CONTINUATION scenes
 
-### T2: Multi-angle INSERT
-Break one moment into multiple camera angles.
-- **When:** Dramatic or important story moments deserve more screen time
-- **How:** Create INSERT scenes with different prompts (close-up, reaction, detail)
+### T2: Multi-angle Breakdown (the killer technique)
+Explode ONE moment into multiple camera angles — like a real film director cutting between shots. Use `EDIT_IMAGE` on the parent scene's image to create new perspectives while keeping character/environment consistency via refs.
+
+- **When:** Dramatic peaks, action moments, emotional beats — any scene worth more than 8s of screen time
+- **How:**
+  1. Start with the parent scene image (e.g. wide establishing shot)
+  2. `EDIT_IMAGE` the parent image with camera-angle prompts + character refs:
+     - Close-up of character's face/hands/eyes
+     - Over-the-shoulder of another character watching
+     - Low angle / worm's eye for power/drama
+     - Bird's eye / top-down for scale
+     - Reaction shot from a different character's perspective
+     - Detail shot (object, texture, environment element)
+  3. Each edit produces a new angle that's visually consistent with the original
+  4. Create INSERT scenes for each angle, chain videos between them
+
+**Example: "Hero grabs the sword" (Scene 3, wide shot)**
+```
+Scene 3:  Wide shot, hero walks to sword               (ROOT, i2v)
+  ├── 3a: EDIT → extreme close-up, hand grips hilt     (INSERT, start:3a end:3 → smooth zoom-in)
+  ├── 3b: EDIT → OTS villain watching from shadows      (INSERT, hard cut → tension)
+  ├── 3c: EDIT → low angle, sword pulled free, light    (INSERT, start:3c end:3a → smooth transition)
+  └── 3d: EDIT → bird's eye, light radiates across room (INSERT, start:3d end:3c → dramatic reveal)
+```
+Result: One 8s moment becomes **40s of rich multi-angle cinema**.
+
+**Camera angle ideas for edits** (see `/gla:camera-guide`):
+- `"Extreme close-up of [character]'s eyes, shallow DOF"` — emotion
+- `"Over-the-shoulder shot from [other character], watching"` — relationship
+- `"Low angle looking up at [subject], dramatic lighting"` — power
+- `"Bird's eye top-down view of the scene"` — scale/context
+- `"Dutch angle, tilted frame, tension"` — unease
+- `"POV shot from [character]'s perspective"` — immersion
+- `"Macro detail shot of [object]"` — texture/significance
 
 ### T3: Reference Video (r2v)
 Generate video purely from character reference images — no start frame.
@@ -27,10 +57,17 @@ Generate same scene in both VERTICAL + HORIZONTAL for multi-platform.
 - **When:** Publishing to both YouTube Shorts (vertical) and YouTube (horizontal)
 - **How:** Create two requests per scene, one VERTICAL one HORIZONTAL
 
-### T5: Scene Branching
-One parent scene → multiple CONTINUATION children = alternate story paths.
-- **When:** "What if" variations, A/B testing different story directions
-- **How:** Multiple scenes with same `parent_scene_id` but different prompts
+### T5: Scene Branching (explore + pick)
+Generate multiple visual variations of the same story moment, review, pick the best.
+
+- **When:** Key scenes where quality matters most — hero moments, emotional peaks, final shots
+- **How:**
+  1. Create 2-3 CONTINUATION children of the same parent, each with a slightly different prompt or camera angle
+  2. Generate images for all branches
+  3. Review — pick the winner, delete the rest
+  4. Only generate video for the winner (saves credits)
+- **Combine with T2:** Branch to explore different angle breakdowns, then commit to the best cinematic sequence
+- **Combine with T6:** Use REGENERATE_IMAGE on the same scene to get different seeds, or EDIT_IMAGE to tweak the best candidate
 
 ### T6: Iterative Image Refinement
 Polish scene images before committing to video generation.
@@ -57,25 +94,29 @@ Review scenes and suggest enhancements:
 Based on the story, suggest specific enhancements. Example:
 
 ```
-Scene 1 (Morning Setup) — ROOT
-  → OK as-is (establishing shot)
+Scene 1 (Morning Setup) — ROOT, wide establishing shot
+  → OK as-is (sets the stage)
 
-Scene 2 (First Customer) — CONTINUATION
-  → CHAIN from Scene 1 (smooth transition sunrise → morning)
-  → INSERT 2a: "Close-up reaction of Mai's eyes widening seeing the fish" (reaction shot)
+Scene 2 (First Customer) — ROOT, hard cut (new moment)
+  → No chain — location change feels natural as hard cut
+  → EDIT 2a: close-up of customer's face reacting to the fish display (T2 angle breakdown)
 
-Scene 3 (Juggling) — CONTINUATION  
-  → CHAIN from Scene 2
-  → INSERT 3a: "Low angle looking up at fish spinning in the air, crowd blurred behind" (dynamic angle)
-  → INSERT 3b: "Crowd POV watching Pippip perform, hands clapping" (audience perspective)
+Scene 3 (Juggling) — CONTINUATION from Scene 2
+  → CHAIN from Scene 2 (smooth transition, same location)
+  → This is the showpiece — T2 multi-angle breakdown:
+    → EDIT 3a: "Low angle looking up at fish spinning in the air, crowd blurred, 85mm lens" 
+    → EDIT 3b: "Over-the-shoulder from crowd member watching Pippip, shallow DOF"
+    → EDIT 3c: "Extreme close-up Pippip's hands catching fish, slow motion, macro detail"
+  → Chain: Scene3→3a (smooth zoom-in), 3a→3b (hard cut to crowd), 3b→3c (hard cut to hands)
+  → One 8s moment becomes 32s of rich multi-angle cinema
 
-Scene 4 (Temptation) — CONTINUATION
-  → CHAIN from Scene 3
-  → This is the dramatic peak — add r2v intro: dream sequence of Golden Fish glowing
+Scene 4 (Temptation) — ROOT, hard cut (mood change)
+  → Dream sequence intro via r2v (T3): golden fish reference images only, no start frame
+  → Then Scene 4 image as main scene
 
-Scene 5 (Resolution) — CONTINUATION
-  → CHAIN from Scene 4
-  → INSERT 5a: "Empty market stalls at sunset, peaceful wide shot" (outro establishing shot)
+Scene 5 (Resolution) — ROOT (peaceful ending, different energy)
+  → EDIT 5a: "Wide pull-back, empty market stalls at sunset, volumetric light" (outro)
+  → T5 branch: generate 2 versions of Scene 5, pick the most cinematic
 ```
 
 ## Step 3: Execute with user approval
@@ -93,15 +134,17 @@ Present the plan and ask which enhancements to apply. Then execute:
 
 Print the final scene timeline:
 ```
-00:00 Scene 1    [ROOT]         Morning Setup (i2v)
-00:08 Scene 2    [CHAIN←1]     First Customer (i2v_fl, smooth from scene 1)
-00:16 Scene 2a   [INSERT←2]    Mai's reaction close-up (i2v)
-00:24 Scene 3    [CHAIN←2a]    Juggling (i2v_fl)
-00:32 Scene 3a   [INSERT←3]    Low angle fish arc (i2v)
-00:40 Scene 4    [CHAIN←3a]    Temptation (i2v_fl)
-00:48 Scene 4r   [R2V]         Dream sequence (r2v, no start frame)
-00:56 Scene 5    [CHAIN←4]     Resolution (i2v_fl)
-01:04 Scene 5a   [INSERT←5]    Sunset outro (i2v)
+00:00 Scene 1    [ROOT]         Morning Setup, wide establishing (i2v)
+00:08 Scene 2    [ROOT]         First Customer arrives (i2v, hard cut)
+00:16 Scene 2a   [EDIT←2]      Close-up customer reaction (i2v)
+00:24 Scene 3    [CHAIN←2]     Juggling begins, medium tracking (i2v_fl)
+00:32 Scene 3a   [EDIT←3]      Low angle fish in air, 85mm (i2v, start:3a end:3 smooth zoom)
+00:40 Scene 3b   [EDIT←3]      OTS crowd watching, shallow DOF (i2v, hard cut)
+00:48 Scene 3c   [EDIT←3]      Extreme close-up hands catch fish (i2v, hard cut)
+00:56 Scene 4r   [R2V]         Dream sequence, golden fish (r2v, no start frame)
+01:04 Scene 4    [ROOT]         Temptation scene (i2v, hard cut from dream)
+01:12 Scene 5    [ROOT]         Resolution, warm sunset (i2v)
+01:20 Scene 5a   [EDIT←5]      Wide pull-back, empty market, volumetric light (i2v)
 ```
 
 Run `/gla:concat <VID>` to merge the final video.
