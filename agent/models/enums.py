@@ -12,6 +12,8 @@ StatusType = Literal["PENDING", "PROCESSING", "COMPLETED", "FAILED"]
 
 ChainType = Literal["ROOT", "CONTINUATION", "INSERT"]
 
+SceneSource = Literal["root", "user", "system"]
+
 ProjectStatus = Literal["ACTIVE", "ARCHIVED", "DELETED"]
 
 VideoStatus = Literal["DRAFT", "PROCESSING", "COMPLETED", "FAILED"]

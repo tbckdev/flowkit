@@ -29,7 +29,7 @@ _COLUMNS = {
               "horizontal_video_url", "horizontal_video_media_id", "horizontal_video_status",
               "horizontal_upscale_url", "horizontal_upscale_media_id", "horizontal_upscale_status",
               "vertical_end_scene_media_id", "horizontal_end_scene_media_id",
-              "trim_start", "trim_end", "duration", "display_order", "updated_at"},
+              "trim_start", "trim_end", "duration", "display_order", "source", "updated_at"},
     "request": {"status", "request_id", "media_id", "output_url", "error_message", "retry_count", "source_media_id", "updated_at"},
 }
 

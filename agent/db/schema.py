@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS scene (
 
     parent_scene_id TEXT REFERENCES scene(id) ON DELETE SET NULL,
     chain_type      TEXT NOT NULL DEFAULT 'ROOT' CHECK(chain_type IN ('ROOT','CONTINUATION','INSERT')),
+    source          TEXT NOT NULL DEFAULT 'root' CHECK(source IN ('root','user','system')),
 
     -- Vertical orientation
     vertical_image_url          TEXT,
@@ -199,6 +200,12 @@ CREATE INDEX IF NOT EXISTS idx_request_scene ON request(scene_id);
             await db.execute("DROP TABLE _request_old")
             await db.execute("PRAGMA foreign_keys=ON")
             logger.info("Migrated: renamed GENERATE_IMAGES -> GENERATE_IMAGE in request table")
+        # Migration: add source column to scene table
+        cursor = await db.execute("PRAGMA table_info(scene)")
+        scene_columns = {row[1] for row in await cursor.fetchall()}
+        if "source" not in scene_columns:
+            await db.execute("ALTER TABLE scene ADD COLUMN source TEXT NOT NULL DEFAULT 'root'")
+            logger.info("Migrated: added source column to scene table")
         await db.commit()
     logger.info("Database initialized at %s", DB_PATH)
 

@@ -99,6 +99,16 @@ Polish scene images before committing to video generation.
 - **Workflow:** Generate → Review → Edit/Regen → Review → Video
 - **Tip:** Edit preserves the base image structure. Regen gives a completely new interpretation of the same prompt.
 
+## Step 0: Cleanup previous creative-mix scenes
+
+Before running creative-mix, remove any previous system-generated scenes:
+
+```bash
+curl -X DELETE "http://127.0.0.1:8100/api/scenes?video_id=<VID>&source=system"
+```
+
+This deletes all `source=system` INSERT scenes and re-compacts display_order. Safe to re-run.
+
 ## Step 1: Analyze current video
 
 ```bash
@@ -142,7 +152,7 @@ Scene 5 (Resolution) — ROOT (peaceful ending, different energy)
 
 Present the plan and ask which enhancements to apply. Then execute:
 
-1. Create any new INSERT scenes (`POST /api/scenes`)
+1. Create any new INSERT scenes (`POST /api/scenes` with `"source": "system"`)
 2. Generate images for new scenes (`/gla:gen-images`)
 2b. Review generated images — refine with EDIT_IMAGE or REGENERATE_IMAGE as needed
 3. Set up chain end_scene_media_ids

@@ -41,7 +41,8 @@ curl -X POST http://127.0.0.1:8100/api/scenes \
     "prompt": "<user prompt>",
     "character_names": ["<same as parent>"],
     "chain_type": "INSERT",
-    "parent_scene_id": "<parent_scene_id>"
+    "parent_scene_id": "<parent_scene_id>",
+    "source": "user"
   }'
 ```
 

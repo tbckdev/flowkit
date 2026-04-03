@@ -17,6 +17,7 @@ def _scene_to_flat(sdk_scene) -> dict:
     flat["display_order"] = sdk_scene.display_order
     flat["parent_scene_id"] = sdk_scene.parent_scene_id
     flat["chain_type"] = sdk_scene.chain_type
+    flat["source"] = sdk_scene.source
     flat["character_names"] = sdk_scene.character_names
     flat["created_at"] = sdk_scene.created_at
     flat["updated_at"] = sdk_scene.updated_at
@@ -77,3 +78,24 @@ async def delete(sid: str):
     if not await _repo.delete("scene", sid):
         raise HTTPException(404, "Scene not found")
     return {"ok": True}
+
+
+@router.delete("")
+async def cleanup(video_id: str, source: str = "system"):
+    """Delete all scenes with given source and re-compact display_order."""
+    if source not in ("system", "user"):
+        raise HTTPException(400, "Can only cleanup 'system' or 'user' scenes")
+    scenes = await _repo.list_scenes(video_id)
+    to_delete = [s for s in scenes if s.source == source]
+    to_keep = sorted([s for s in scenes if s.source != source], key=lambda s: s.display_order)
+
+    # Delete matching scenes
+    for s in to_delete:
+        await _repo.delete("scene", s.id)
+
+    # Re-compact display_order (0, 1, 2, ...)
+    for i, s in enumerate(to_keep):
+        if s.display_order != i:
+            await _repo.update("scene", s.id, display_order=i)
+
+    return {"deleted": len(to_delete), "remaining": len(to_keep)}

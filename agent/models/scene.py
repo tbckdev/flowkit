@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from agent.models.enums import ChainType, StatusType
+from agent.models.enums import ChainType, SceneSource, StatusType
 
 
 class SceneCreate(BaseModel):
@@ -12,6 +12,7 @@ class SceneCreate(BaseModel):
     character_names: Optional[list[str]] = None
     parent_scene_id: Optional[str] = None
     chain_type: ChainType = "ROOT"
+    source: Optional[SceneSource] = None
 
 
 class SceneUpdate(BaseModel):
@@ -20,6 +21,7 @@ class SceneUpdate(BaseModel):
     video_prompt: Optional[str] = None
     character_names: Optional[list[str]] = None
     chain_type: Optional[ChainType] = None
+    source: Optional[str] = None
     display_order: Optional[int] = None
 
     vertical_image_url: Optional[str] = None
@@ -60,6 +62,7 @@ class Scene(BaseModel):
     character_names: Optional[list[str]] = None  # parsed from JSON
     parent_scene_id: Optional[str] = None
     chain_type: str = "ROOT"
+    source: Optional[str] = "root"
 
     vertical_image_url: Optional[str] = None
     vertical_image_media_id: Optional[str] = None

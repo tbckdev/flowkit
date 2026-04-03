@@ -45,6 +45,7 @@ class Scene(DomainModel):
     character_names: Optional[list[str]] = field(default=None)
     parent_scene_id: Optional[str] = None
     chain_type: str = "ROOT"
+    source: Optional[str] = "root"
 
     vertical: OrientationSlot = field(default_factory=OrientationSlot)
     horizontal: OrientationSlot = field(default_factory=OrientationSlot)
@@ -82,6 +83,7 @@ class Scene(DomainModel):
             character_names=names_raw,
             parent_scene_id=row.get("parent_scene_id"),
             chain_type=row.get("chain_type", "ROOT"),
+            source=row.get("source", "root"),
             vertical=_slot_from_row(row, "vertical"),
             horizontal=_slot_from_row(row, "horizontal"),
             trim_start=row.get("trim_start"),
@@ -105,6 +107,7 @@ class Scene(DomainModel):
             "character_names": _json.dumps(self.character_names) if isinstance(self.character_names, list) else self.character_names,
             "parent_scene_id": self.parent_scene_id,
             "chain_type": self.chain_type,
+            "source": self.source,
             "_project_id": project_id,
         }
         # Flatten OrientationSlot fields

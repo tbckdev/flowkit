@@ -84,6 +84,7 @@ class SQLiteRepository(Repository):
             "video_prompt": scene.video_prompt,
             "character_names": json.dumps(scene.character_names) if scene.character_names is not None else None,
             "chain_type": scene.chain_type,
+            "source": scene.source,
             "display_order": scene.display_order,
             "trim_start": scene.trim_start,
             "trim_end": scene.trim_end,
