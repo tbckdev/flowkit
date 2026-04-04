@@ -102,7 +102,7 @@ function updateRequestLog(entries) {
   // Render newest first
   const rows = [...entries].reverse().map((entry) => {
     const type   = formatType(entry.type || entry.method);
-    const time   = formatTime(entry.timestamp || entry.createdAt);
+    const time   = formatTime(entry.time || entry.timestamp || entry.createdAt);
     const status = entry.status || entry.state || 'pending';
     const error  = entry.error || '';
 

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Optional
 import aiohttp
 
 from agent.db import crud
-from agent.config import POLL_INTERVAL, VIDEO_POLL_TIMEOUT
+from agent.config import VIDEO_POLL_INTERVAL, VIDEO_POLL_TIMEOUT
 from agent.worker._parsing import (
     _is_error,
     _is_uuid,
@@ -63,7 +63,7 @@ async def _poll_operations(
     if not operations:
         return {"error": "No operations to poll"}
 
-    poll_interval = POLL_INTERVAL
+    poll_interval = VIDEO_POLL_INTERVAL
     elapsed = 0
     current_ops = operations
 

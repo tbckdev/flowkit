@@ -22,6 +22,7 @@ RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "6LdsFiUsAAAAAIjVDZcuL
 
 # ─── Worker ──────────────────────────────────────────────────
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "5"))
+VIDEO_POLL_INTERVAL = int(os.environ.get("VIDEO_POLL_INTERVAL", "10"))  # polling interval for video/upscale status
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))
 VIDEO_POLL_TIMEOUT = int(os.environ.get("VIDEO_POLL_TIMEOUT", "420"))
 API_COOLDOWN = int(os.environ.get("API_COOLDOWN", "10"))  # seconds between API calls (anti-spam)
