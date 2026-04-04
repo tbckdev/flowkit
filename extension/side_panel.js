@@ -6,20 +6,30 @@
 // ── Type label map ───────────────────────────────────────────
 
 const TYPE_LABELS = {
-  GENERATE_IMAGE:           'IMG',
-  REGENERATE_IMAGE:         'RIMG',
-  EDIT_IMAGE:               'EDIT',
-  GENERATE_CHARACTER_IMAGE: 'REF',
-  REGENERATE_CHARACTER_IMAGE: 'RREF',
-  EDIT_CHARACTER_IMAGE:     'EREF',
-  GENERATE_VIDEO:           'VID',
-  GENERATE_VIDEO_REFS:      'RVID',
-  UPSCALE_VIDEO:            'UPS',
-  IMAGE_GENERATION:         'IMG',
-  VIDEO_GENERATION:         'VID',
-  CREATE_PROJECT:           'PROJ',
-  UPLOAD:                   'UPL',
-  MEDIA:                    'MED',
+  // Worker request types
+  GENERATE_IMAGE:           'GEN IMAGE',
+  REGENERATE_IMAGE:         'REGEN IMAGE',
+  EDIT_IMAGE:               'EDIT IMAGE',
+  GENERATE_CHARACTER_IMAGE: 'GEN REF',
+  REGENERATE_CHARACTER_IMAGE: 'REGEN REF',
+  EDIT_CHARACTER_IMAGE:     'EDIT REF',
+  GENERATE_VIDEO:           'GEN VIDEO',
+  GENERATE_VIDEO_REFS:      'GEN VIDEO FROM REFS',
+  UPSCALE_VIDEO:            'UPSCALE VIDEO',
+  // Captcha action types
+  IMAGE_GENERATION:         'GEN IMAGE',
+  VIDEO_GENERATION:         'GEN VIDEO',
+  // Extension-classified API types
+  GEN_IMG:                  'GEN IMAGE',
+  GEN_VID:                  'GEN VIDEO',
+  GEN_VID_REF:              'GEN VIDEO FROM REFS',
+  UPSCALE:                  'UPSCALE VIDEO',
+  UPS_IMG:                  'UPSCALE IMAGE',
+  POLL:                     'CHECK GEN VIDEO',
+  CREDITS:                  'CHECK CREDIT',
+  CREATE_PROJECT:           'CREATE PROJECT',
+  UPLOAD:                   'UPLOAD IMAGE',
+  MEDIA:                    'READ MEDIA',
   TRPC:                     'TRPC',
   API:                      'API',
 };
@@ -99,8 +109,8 @@ function updateRequestLog(entries) {
 
   countEl.textContent = entries.length;
 
-  // Render newest first
-  const rows = [...entries].reverse().map((entry) => {
+  // Render newest first (entries already sorted DESC by background.js)
+  const rows = entries.map((entry) => {
     const type   = formatType(entry.type || entry.method);
     const time   = formatTime(entry.time || entry.timestamp || entry.createdAt);
     const status = entry.status || entry.state || 'pending';

@@ -135,6 +135,25 @@ async def check_status(body: CheckStatusRequest):
     return result.get("data", result)
 
 
+@router.get("/media/{media_id}")
+async def get_media(media_id: str):
+    """Get media metadata + fresh signed URL from Google Flow.
+
+    Returns the raw response which should contain a fresh fifeUrl/servingUri.
+    Use this to refresh expired GCS signed URLs.
+    """
+    client = get_flow_client()
+    if not client.connected:
+        raise HTTPException(503, "Extension not connected")
+    result = await client.get_media(media_id)
+    if result.get("error"):
+        raise HTTPException(502, result["error"])
+    status = result.get("status", 200)
+    if isinstance(status, int) and status >= 400:
+        raise HTTPException(status, result.get("data", "Media not found"))
+    return result.get("data", result)
+
+
 @router.post("/edit-image")
 async def edit_image(body: EditImageRequest):
     """Edit an existing image using IMAGE_INPUT_TYPE_BASE_IMAGE (bypasses queue)."""

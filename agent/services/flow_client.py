@@ -31,8 +31,7 @@ class FlowClient:
     def set_extension(self, ws):
         """Called when extension connects via WS."""
         self._extension_ws = ws
-        logger.info("Extension connected")
-        asyncio.create_task(self._sync_tier())
+        logger.info("Extension connected (waiting for extension_ready/token_captured to sync)")
 
     def clear_extension(self):
         """Called when extension disconnects."""
@@ -415,15 +414,22 @@ class FlowClient:
         Production calls: GET /v1/media/{mediaId}?key=...&clientContext.tool=PINHOLE
         Returns True on 200, False otherwise.
         """
+        result = await self.get_media(media_id)
+        status = result.get("status", 500)
+        return isinstance(status, int) and status == 200
+
+    async def get_media(self, media_id: str) -> dict:
+        """Fetch media metadata from Google Flow.
+
+        Returns the raw API response which contains a fresh signed URL
+        in data.fifeUrl or data.servingUri.
+        """
         url = f"{GOOGLE_FLOW_API}/v1/media/{media_id}?key={GOOGLE_API_KEY}&clientContext.tool=PINHOLE"
-        result = await self._send("api_request", {
+        return await self._send("api_request", {
             "url": url,
             "method": "GET",
             "headers": random_headers(),
         }, timeout=15)
-
-        status = result.get("status", 500)
-        return isinstance(status, int) and status == 200
 
     async def upload_image(self, image_base64: str, mime_type: str = "image/jpeg",
                             project_id: str = "", file_name: str = "image.jpg") -> dict:

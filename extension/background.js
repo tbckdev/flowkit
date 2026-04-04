@@ -21,6 +21,22 @@ let metrics = {
   lastError: null,
 };
 
+// ─── URL → Log Type Classifier ─────────────────────────────
+
+function _classifyApiUrl(url) {
+  if (url.includes('/uploadImage'))                    return 'UPLOAD';
+  if (url.includes('/batchGenerateImages'))             return 'GEN_IMG';
+  if (url.includes('/batchAsyncGenerateVideoStartImage'))    return 'GEN_VID';
+  if (url.includes('/batchAsyncGenerateVideoStartAndEnd'))   return 'GEN_VID';
+  if (url.includes('/batchAsyncGenerateVideoReferenceImages')) return 'GEN_VID_REF';
+  if (url.includes('/batchAsyncGenerateVideoUpsampleVideo'))  return 'UPSCALE';
+  if (url.includes('/batchCheckAsyncVideoGenerationStatus'))  return 'POLL';
+  if (url.includes('/upsampleImage'))                  return 'UPS_IMG';
+  if (url.includes('/media/'))                         return 'MEDIA';
+  if (url.includes('/credits'))                        return 'CREDITS';
+  return 'API';
+}
+
 // ─── Request Log ────────────────────────────────────────────
 
 let requestLog = [];
@@ -345,7 +361,7 @@ async function handleApiRequest(msg) {
   metrics.requestCount++;
 
   const logId = id;
-  const logType = captchaAction || (url.includes('/uploadImage') ? 'UPLOAD' : url.includes('/media/') ? 'MEDIA' : 'API');
+  const logType = captchaAction || _classifyApiUrl(url);
   addRequestLog({ id: logId, type: logType, time: new Date().toISOString(), status: 'processing', error: null, outputUrl: null });
 
   try {
