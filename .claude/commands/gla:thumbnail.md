@@ -17,25 +17,23 @@ Extract and understand:
 - **Key conflict**: what dramatic moment defines the video?
 - **Language**: match the project language for text on thumbnail
 
-## Step 2: Create the HOOK
+## Step 2: Create 2-LINE TEXT
 
-A YouTube thumbnail hook = ONE sentence that makes someone NEED to click.
+Every thumbnail needs **2 lines of text**:
 
-Based on the story, create a hook by answering:
-- "What question does this video answer?"
-- "What impossible situation happens?"
-- "What will the viewer NOT believe?"
+**Line 1 (HOOK):** 2-3 power words — emotion/urgency/shock
+**Line 2 (CONTEXT):** 5-8 words — what the video is about, answers "why click?"
 
-Turn the hook into **2-4 bold words** for the thumbnail text. Examples:
-- Military story about Iran blocking strait → "EO BIỂN TỬ THẦN" or "IRAN ATTACKS!"
-- Romance about impossible love → "CÔ ẤY ĐÃ CHẾT?"
-- Action about heist → "KHÔNG AI SỐNG SÓT"
+### Examples:
+- Military: Line 1 = "IRAN TẤN CÔNG!" / Line 2 = "Hải Quân Mỹ Mắc Kẹt Eo Biển Tử Thần"
+- Romance: Line 1 = "CÔ ẤY ĐÃ CHẾT?" / Line 2 = "Bí Mật Kinh Hoàng Sau Đám Cưới"
+- Action: Line 1 = "KHÔNG AI SỐNG SÓT" / Line 2 = "Vụ Cướp Thế Kỷ Tại Ngân Hàng Trung Ương"
 
-The text MUST be:
-- 2-4 words maximum
-- In the project's language
-- Provocative — creates curiosity gap
-- Uses power words: ATTACK, DEATH, IMPOSSIBLE, SHOCK, SECRET, LAST, FINAL
+### Rules:
+- Both lines in project's language
+- Line 1: provocative, uses power words (ATTACK, DEATH, IMPOSSIBLE, SHOCK, SECRET)
+- Line 2: gives context — what/who/why (not just repeating Line 1)
+- Line 2 makes Line 1 specific: "IRAN ATTACKS!" + "US Navy Trapped in Deadly Strait" → viewer knows WHAT
 
 ## Step 3: Build 4 thumbnail prompts
 
@@ -44,33 +42,51 @@ The text MUST be:
 2. Character names in `character_names` for face consistency
 3. The project's material style prefix
 
+### Non-English Text (CRITICAL)
+
+For non-English text (Vietnamese, etc.), use the **language hint pattern** in prompts:
+```
+bold [COLOR] text in [LANGUAGE] clearly "[TEXT WITH DIACRITICS]" at [POSITION]
+```
+
+Example:
+```
+bold yellow text in Vietnamese clearly "IRAN TẤN CÔNG!" at top center in thick sans-serif font with red outline,
+smaller white text in Vietnamese clearly "HẢI QUÂN MỸ MẮC KẸT EO BIỂN TỬ THẦN" below in bold font with shadow
+```
+
+**Without "in [Language] clearly":** Google Flow returns "invalid argument" for diacritical characters.
+
 ### Prompt template:
 
 ```
-[MATERIAL_PREFIX] Bold YouTube thumbnail, [HOOK_TEXT] written in large bold white text 
-with black outline at [POSITION: top/upper-left/upper-right] of frame.
-[MAIN_CHARACTER] [ACTION + EXTREME EMOTION], [DRAMATIC ELEMENT behind/around character],
-vivid [COLOR1] and [COLOR2], bright saturated colors, dramatic rim lighting,
-simple blurred background, photorealistic, YouTube thumbnail style, 
-designed to hook viewers and get clicks
+[MATERIAL_PREFIX] YouTube thumbnail,
+bold [COLOR1] text in [LANGUAGE] clearly "[LINE1_HOOK]" at [POSITION] in thick sans-serif font with [OUTLINE_COLOR] outline,
+smaller [COLOR2] text in [LANGUAGE] clearly "[LINE2_CONTEXT]" below in bold font with [SHADOW] shadow,
+[MAIN_SUBJECT + EMOTION + ACTION],
+[CAMERA_ANGLE + COMPOSITION],
+[SETTING/ENVIRONMENT],
+[LIGHTING + COLOR_PALETTE],
+4K, 8K, masterpiece, highly detailed, sharp focus, HDR,
+1280x720, 16:9 YouTube thumbnail format
 ```
 
 ### 4 variants — each uses different angle:
 
 **V1 — Face + Text (hook via emotion):**
-Main character face HUGE (50% of frame), extreme emotion, hook text at top.
+Main character face HUGE (50% of frame), extreme emotion, 2-line text at top.
 Background: threat/explosion/danger barely visible.
 
 **V2 — Action + Text (hook via stakes):**
-Main character in action pose, overwhelming threat visible, hook text at top-left.
-Wide enough to show the scale of danger.
+Wide cinematic angle, overwhelming threat visible, 2-line text at upper-left.
+Shows scale of danger.
 
 **V3 — Confrontation + Text (hook via conflict):**
-Hero vs villain/threat facing each other, hook text between them or at top.
+Hero vs villain/threat facing each other, 2-line text at top.
 Clear visual tension between two sides.
 
 **V4 — Mystery + Text (hook via curiosity):**
-Character reacting to something OFF-SCREEN, hook text as a question or cliffhanger.
+Character reacting to something OFF-SCREEN, 2-line text at upper-right.
 Viewer can't see what character sees → must click.
 
 ## Step 4: Collect character refs
