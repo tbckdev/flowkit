@@ -242,6 +242,17 @@ class OperationService:
         base_prompt = scene.get("video_prompt") or scene.get("prompt", "")
         prompt = await _build_video_prompt(base_prompt, scene, pid)
 
+        # Check if already submitted (op_name saved from previous attempt)
+        existing_op = None
+        if request_id:
+            req_row = await crud.get_request(request_id)
+            existing_op = req_row.get("request_id") if req_row else None
+
+        if existing_op:
+            logger.info("Video gen already submitted (op=%s), re-polling", existing_op[:30])
+            operations = [{"operation": {"name": existing_op}, "status": "MEDIA_GENERATION_STATUS_PENDING"}]
+            return await _poll_operations(self._client, operations)
+
         submit_result = await self._client.generate_video(
             start_image_media_id=image_media_id,
             prompt=prompt,
@@ -314,6 +325,17 @@ class OperationService:
         if not ref_ids:
             return {"error": "No valid character media_ids for r2v"}
 
+        # Check if already submitted (op_name saved from previous attempt)
+        existing_op = None
+        if request_id:
+            req_row = await crud.get_request(request_id)
+            existing_op = req_row.get("request_id") if req_row else None
+
+        if existing_op:
+            logger.info("R2V already submitted (op=%s), re-polling", existing_op[:30])
+            operations = [{"operation": {"name": existing_op}, "status": "MEDIA_GENERATION_STATUS_PENDING"}]
+            return await _poll_operations(self._client, operations)
+
         submit_result = await self._client.generate_video_from_references(
             reference_media_ids=ref_ids,
             prompt=prompt,
@@ -346,13 +368,29 @@ class OperationService:
 
     async def upscale_scene_video(self, scene: dict, orientation: str,
                                   request_id: str = "") -> dict:
-        """Upscale a completed scene video. Submits + polls."""
+        """Upscale a completed scene video. Submits + polls.
+
+        If a previous attempt already submitted (op_name saved in DB), skip
+        submit and just re-poll — avoids duplicate API calls on retry.
+        """
         prefix = "vertical" if orientation == "VERTICAL" else "horizontal"
         video_media_id = scene.get(f"{prefix}_video_media_id")
         if not video_media_id:
             return {"error": f"No {prefix} video media_id for scene"}
 
         aspect = "VIDEO_ASPECT_RATIO_PORTRAIT" if orientation == "VERTICAL" else "VIDEO_ASPECT_RATIO_LANDSCAPE"
+
+        # Check if already submitted (op_name saved from previous attempt)
+        existing_op = None
+        if request_id:
+            req_row = await crud.get_request(request_id)
+            existing_op = req_row.get("request_id") if req_row else None
+
+        if existing_op:
+            # Already submitted — just re-poll
+            logger.info("Upscale already submitted (op=%s), re-polling", existing_op[:30])
+            operations = [{"operation": {"name": existing_op}, "status": "MEDIA_GENERATION_STATUS_PENDING"}]
+            return await _poll_operations(self._client, operations, timeout=300)
 
         submit_result = await self._client.upscale_video(
             media_id=video_media_id,

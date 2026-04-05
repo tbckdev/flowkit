@@ -397,6 +397,12 @@ async def _handle_failure(rid: str, req: dict, result: dict, retry_after: dict =
 
     error_lower = str(error_msg).lower()
 
+    # WS transient errors (extension disconnect/reconnect): retry without incrementing count
+    if "extension reconnected" in error_lower or "extension disconnected" in error_lower or "extension not connected" in error_lower:
+        await crud.update_request(rid, status="PENDING", error_message=str(error_msg))
+        logger.info("Request %s transient WS error, will retry (no retry increment): %s", rid[:8], error_msg)
+        return
+
     # reCAPTCHA errors: retry up to 10 times — deferred dict in main loop handles delay
     if "captcha" in error_lower or "recaptcha" in error_lower:
         retry = req.get("retry_count", 0) + 1

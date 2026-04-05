@@ -6,7 +6,7 @@ import signal
 from contextlib import asynccontextmanager
 
 import websockets
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent.config import API_HOST, API_PORT, WS_HOST, WS_PORT
@@ -121,6 +121,24 @@ app.include_router(flow_router, prefix="/api")
 app.include_router(reviews_router, prefix="/api")
 app.include_router(tts_router, prefix="/api")
 app.include_router(materials_router, prefix="/api")
+
+
+@app.post("/api/ext/callback")
+async def ext_callback(request: Request):
+    """HTTP callback for extension to deliver API responses.
+
+    Replaces ws.send() for response delivery — immune to WS disconnect.
+    Extension POSTs {id, status, data, error} here instead of sending via WS.
+    """
+    data = await request.json()
+    client = get_flow_client()
+    req_id = data.get("id")
+    if req_id and req_id in client._pending:
+        future = client._pending[req_id]
+        if not future.done():
+            future.set_result(data)
+        return {"ok": True}
+    return {"ok": False, "reason": "no matching pending request"}
 
 
 @app.get("/health")
