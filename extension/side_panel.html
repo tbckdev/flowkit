@@ -262,6 +262,7 @@
       z-index: 1;
     }
 
+    thead th:first-child { width: 60px; }
     thead th:last-child { width: 36%; }
 
     tbody tr {
@@ -275,6 +276,13 @@
       padding: 5px 10px;
       vertical-align: middle;
       white-space: nowrap;
+    }
+
+    .td-id {
+      font-size: 9px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.03em;
     }
 
     .td-type {
@@ -442,6 +450,7 @@
       <table>
         <thead>
           <tr>
+            <th>ID</th>
             <th>Type</th>
             <th>Time</th>
             <th>Status</th>
@@ -450,7 +459,7 @@
         </thead>
         <tbody id="log-body">
           <tr>
-            <td colspan="4" class="log-empty">No requests yet</td>
+            <td colspan="5" class="log-empty">No requests yet</td>
           </tr>
         </tbody>
       </table>

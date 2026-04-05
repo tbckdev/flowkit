@@ -37,6 +37,9 @@ async def ws_handler(websocket):
     client.set_extension(websocket)
     logger.info("Extension connected from %s", websocket.remote_address)
 
+    # Send callback secret so extension can authenticate HTTP callbacks
+    await websocket.send(json.dumps({"type": "callback_secret", "secret": _CALLBACK_SECRET}))
+
     try:
         async for raw in websocket:
             try:
@@ -123,20 +126,29 @@ app.include_router(tts_router, prefix="/api")
 app.include_router(materials_router, prefix="/api")
 
 
+import secrets as _secrets
+_CALLBACK_SECRET = _secrets.token_urlsafe(32)
+
+
 @app.post("/api/ext/callback")
 async def ext_callback(request: Request):
     """HTTP callback for extension to deliver API responses.
 
     Replaces ws.send() for response delivery — immune to WS disconnect.
     Extension POSTs {id, status, data, error} here instead of sending via WS.
+    Requires X-Callback-Secret header matching the secret sent to extension on WS connect.
     """
+    if request.headers.get("x-callback-secret") != _CALLBACK_SECRET:
+        return {"ok": False, "reason": "unauthorized"}
     data = await request.json()
     client = get_flow_client()
     req_id = data.get("id")
     if req_id and req_id in client._pending:
         future = client._pending[req_id]
-        if not future.done():
+        try:
             future.set_result(data)
+        except asyncio.InvalidStateError:
+            pass  # already resolved by duplicate callback
         return {"ok": True}
     return {"ok": False, "reason": "no matching pending request"}
 

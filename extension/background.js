@@ -11,6 +11,7 @@ const API_KEY = 'AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY';
 
 let ws = null;
 let flowKey = null;
+let callbackSecret = null;  // Auth secret for HTTP callback, received from server on WS connect
 let state = 'off'; // off | idle | running
 let manualDisconnect = false;
 let metrics = {
@@ -209,6 +210,9 @@ function connectToAgent() {
             metrics,
           },
         });
+      } else if (msg.type === 'callback_secret') {
+        callbackSecret = msg.secret;
+        console.log('[FlowAgent] Received callback secret');
       } else if (msg.type === 'pong') {
         // keepalive response
       }
@@ -244,10 +248,10 @@ function keepAlive() {
 
 function sendToAgent(msg) {
   // API responses (with msg.id) go via HTTP — immune to WS disconnect
-  if (msg.id) {
+  if (msg.id && callbackSecret) {
     fetch('http://127.0.0.1:8100/api/ext/callback', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Callback-Secret': callbackSecret },
       body: JSON.stringify(msg),
     }).catch(() => {
       // HTTP failed — fallback to WS
@@ -255,7 +259,7 @@ function sendToAgent(msg) {
     });
     return;
   }
-  // Non-response messages (ping, status) still use WS
+  // Non-response messages (ping, status) or no secret yet — use WS
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
@@ -409,7 +413,8 @@ async function handleApiRequest(msg) {
   const logId = id;
   const logType = _classifyApiUrl(url);
   if (_VISIBLE_TYPES.has(logType)) {
-    addRequestLog({ id: logId, type: logType, time: new Date().toISOString(), status: 'processing', error: null, outputUrl: null });
+    const payloadSummary = body ? JSON.stringify(body).slice(0, 200) : null;
+    addRequestLog({ id: logId, type: logType, time: new Date().toISOString(), status: 'processing', error: null, outputUrl: null, url, payloadSummary });
   }
 
   try {
@@ -483,12 +488,13 @@ async function handleApiRequest(msg) {
       data: responseData,
     });
 
+    const responseSummary = responseText ? responseText.slice(0, 300) : null;
     if (response.ok) {
       if (hasCaptcha) { metrics.successCount++; metrics.lastError = null; }
-      updateRequestLog(logId, { status: 'success' });
+      updateRequestLog(logId, { status: 'success', httpStatus: response.status, responseSummary });
     } else {
       if (hasCaptcha) { metrics.failedCount++; metrics.lastError = `API_${response.status}`; }
-      updateRequestLog(logId, { status: 'failed', error: `API_${response.status}` });
+      updateRequestLog(logId, { status: 'failed', error: `API_${response.status}`, httpStatus: response.status, responseSummary });
     }
   } catch (e) {
     sendToAgent({

@@ -114,7 +114,7 @@ function updateRequestLog(entries) {
   const countEl = document.getElementById('log-count');
 
   if (!entries || entries.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" class="log-empty">No requests yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="log-empty">No requests yet</td></tr>';
     countEl.textContent = '0';
     return;
   }
@@ -123,18 +123,23 @@ function updateRequestLog(entries) {
 
   // Render newest first (entries already sorted DESC by background.js)
   const rows = entries.map((entry) => {
+    const shortId = entry.id ? String(entry.id).slice(0, 8) : '—';
     const type   = formatType(entry.type || entry.method);
     const time   = formatTime(entry.time || entry.timestamp || entry.createdAt);
     const status = entry.status || entry.state || 'pending';
     const error  = entry.error || '';
 
     let badgeHtml;
-    if (status === 'COMPLETED' || status === 'success' || status === 200) {
-      badgeHtml = '<span class="badge badge-ok">&#10003; ok</span>';
+    if (status === 'COMPLETED' || status === 'success') {
+      badgeHtml = '<span class="badge badge-ok">&#10003; done</span>';
     } else if (status === 'FAILED' || status === 'failed' || (typeof status === 'number' && status >= 400)) {
       badgeHtml = '<span class="badge badge-fail">&#10007; fail</span>';
+    } else if (status === 'PROCESSING') {
+      badgeHtml = '<span class="badge badge-proc">&#9203; gen...</span>';
+    } else if (status === 200 || status === 'processing') {
+      badgeHtml = '<span class="badge badge-proc">&#9203; sent</span>';
     } else {
-      badgeHtml = '<span class="badge badge-proc">&#9203; proc</span>';
+      badgeHtml = '<span class="badge badge-proc">&#9203; sent</span>';
     }
 
     const errorDisplay = error
@@ -142,6 +147,7 @@ function updateRequestLog(entries) {
       : `<td class="td-error empty">—</td>`;
 
     return `<tr>
+      <td class="td-id">${escHtml(shortId)}</td>
       <td class="td-type">${escHtml(type)}</td>
       <td class="td-time">${escHtml(time)}</td>
       <td>${badgeHtml}</td>

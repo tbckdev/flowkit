@@ -78,6 +78,11 @@ def _extract_media_id(result: dict, req_type: str) -> str:
             val = video_meta.get("mediaId", "")
             if val and _is_uuid(val):
                 return val
+            # Inline rawBytes format (upscale returns video data directly)
+            # Do NOT return mediaGenerationId — it's CAMS format, not UUID (Rule #1)
+            if ops[0].get("rawBytes"):
+                logger.info("Inline rawBytes response, no UUID media_id available")
+                return None
             return None
 
     return None
@@ -96,6 +101,11 @@ def _extract_output_url(result: dict, req_type: str) -> str:
         ops = data.get("operations", [])
         if ops:
             video_meta = ops[0].get("operation", {}).get("metadata", {}).get("video", {})
-            return video_meta.get("fifeUrl", "")
+            url = video_meta.get("fifeUrl", "")
+            if url:
+                return url
+            # Inline rawBytes — no URL, check if saved locally
+            if ops[0].get("rawBytes") or ops[0].get("mediaGenerationId"):
+                return ""  # URL will be set by _save_raw_bytes in operations.py
 
     return data.get("videoUri", data.get("imageUri", ""))

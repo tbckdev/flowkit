@@ -43,6 +43,31 @@ def _reference_aspect_ratio(entity_type: str) -> str:
     return "IMAGE_ASPECT_RATIO_PORTRAIT"
 
 
+def _save_raw_bytes(operations: list[dict], scene_id: str, project_id: str) -> str | None:
+    """If operations contain rawBytes (inline 4K video), save to disk and return path."""
+    import pathlib
+    _PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]
+    for op in operations:
+        raw_b64 = op.get("rawBytes")
+        if not raw_b64:
+            continue
+        # Guard against extremely large payloads (>500MB base64 ≈ ~685M chars)
+        if len(raw_b64) > 685_000_000:
+            logger.warning("rawBytes too large (%d chars), skipping", len(raw_b64))
+            continue
+        try:
+            video_data = base64.b64decode(raw_b64)
+            out_dir = _PROJECT_ROOT / "output" / "4k_raw"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            path = out_dir / f"{scene_id}.mp4"
+            path.write_bytes(video_data)
+            logger.info("Saved rawBytes 4K video: %s (%d bytes)", path, len(video_data))
+            return str(path)
+        except Exception as e:
+            logger.warning("Failed to save rawBytes: %s", e)
+    return None
+
+
 def _extract_operations(result: dict) -> list[dict]:
     """Extract operations list from video gen / upscale submit response."""
     data = result.get("data", result)
@@ -405,6 +430,17 @@ class OperationService:
         if not operations:
             return {"error": "Upscale returned no operations"}
 
+        # Check for inline rawBytes (4K video data returned directly)
+        raw_path = _save_raw_bytes(operations, scene.get("id", ""), scene.get("_project_id", ""))
+        if raw_path:
+            logger.info("Upscale returned inline 4K video, saved to %s", raw_path)
+            # Inject saved path into result for downstream parsing
+            if not operations[0].get("operation"):
+                operations[0]["operation"] = {}
+            operations[0]["operation"].setdefault("metadata", {}).setdefault("video", {})["fifeUrl"] = raw_path
+            operations[0]["status"] = "MEDIA_GENERATION_STATUS_SUCCESSFUL"
+            return {"data": {"operations": operations}}
+
         op_name = operations[0].get("operation", {}).get("name", "")
         if request_id:
             await crud.update_request(request_id, request_id=op_name)
@@ -417,7 +453,18 @@ class OperationService:
             return {"error": "Upscale failed immediately"}
 
         logger.info("Upscale submitted, polling %d operations...", len(operations))
-        return await _poll_operations(self._client, operations, timeout=300)
+        poll_result = await _poll_operations(self._client, operations, timeout=300)
+
+        # Check poll result for rawBytes too
+        poll_data = poll_result.get("data", poll_result)
+        poll_ops = poll_data.get("operations", [])
+        if poll_ops:
+            raw_path = _save_raw_bytes(poll_ops, scene.get("id", ""), scene.get("_project_id", ""))
+            if raw_path:
+                logger.info("Poll returned inline 4K video, saved to %s", raw_path)
+                poll_ops[0].setdefault("operation", {}).setdefault("metadata", {}).setdefault("video", {})["fifeUrl"] = raw_path
+
+        return poll_result
 
     # ------------------------------------------------------------------
     # Reference image operations
