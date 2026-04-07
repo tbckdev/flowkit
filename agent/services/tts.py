@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from agent.config import TTS_MODEL, TTS_SAMPLE_RATE, TTS_OUTPUT_DIR
+from agent.config import TTS_MODEL, TTS_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 

@@ -84,7 +84,7 @@ Response includes:
 After narration is mixed, concat narrated videos:
 
 ```bash
-# Download narrated scene videos from output/tts/<VID>/ (*_mixed.mp4)
+# Download narrated scene videos from ${OUTDIR}/tts/ (*_mixed.mp4)
 # Or use the original scene videos + overlay manually with ffmpeg
 # Then concat using gla:concat or ffmpeg
 ```
@@ -108,7 +108,7 @@ curl -X POST http://127.0.0.1:8100/api/tts/generate \
 - Per-scene generation: ~15-20s on CPU
 - 40 scenes batch: ~10-12 minutes
 - Model loads once, reuses for all scenes in a batch
-- WAV files saved to `output/tts/<video_id>/`
+- WAV files saved to `${OUTDIR}/tts/`
 
 ## Recommended Settings for Military Documentary
 

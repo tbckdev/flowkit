@@ -145,4 +145,4 @@ curl -X POST http://127.0.0.1:8100/api/videos/<VID>/narrate \
 - When narrating scenes, the template WAV is used as **ref_audio** for voice cloning
 - This ensures every scene sounds like the same narrator
 - CPU mode only (MPS produces artifacts) — generation takes ~15-30s per template
-- Template WAV is saved permanently in `output/tts/templates/`
+- Template WAV is saved permanently in `output/_shared/tts_templates/`

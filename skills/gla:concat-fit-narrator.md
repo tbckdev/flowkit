@@ -21,13 +21,12 @@ Sort scenes by `display_order`.
 For each scene (sorted by display_order, index = IDX starting at 0):
 
 **Video source** (priority order):
-1. `output/4k_raw/{scene_id}.mp4` (local 4K rawBytes — best quality)
+1. `${OUTDIR}/4k/{scene_id}.mp4` (local 4K rawBytes — best quality)
 2. `horizontal_upscale_url` or `vertical_upscale_url` (4K signed URL)
 3. `horizontal_video_url` or `vertical_video_url` (standard quality)
 
-**TTS source** (check both paths):
-1. `output/{project_name}/tts/scene_{IDX3}_{scene_id}.wav`
-2. `output/tts/{video_id}/scene_{IDX3}_{scene_id}.wav`
+**TTS source:**
+1. `${OUTDIR}/tts/scene_{IDX3}_{scene_id}.wav`
 
 Where `IDX3` = zero-padded 3-digit index (000, 001, ...).
 
@@ -65,8 +64,11 @@ Ask user to confirm before processing.
 ## Step 4: Setup output directory
 
 ```bash
-PROJECT_NAME="<sanitized_project_name>"  # lowercase, spaces→underscores
-mkdir -p output/${PROJECT_NAME}/{trimmed,norm_trimmed}
+# Get project output directory (creates dir + meta.json if needed)
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+SLUG=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['slug'])")
+mkdir -p "${OUTDIR}/trimmed" "${OUTDIR}/norm"
 ```
 
 ## Step 5: Determine output resolution
@@ -92,7 +94,7 @@ ffmpeg -y -ss 1 -i "$VIDEO_FILE" -i "$TTS_WAV" \
   -r 24 -pix_fmt yuv420p \
   -c:a aac -b:a 192k \
   -movflags +faststart \
-  "trimmed/scene_${IDX}.mp4"
+  "${OUTDIR}/trimmed/scene_${IDX}.mp4"
 ```
 
 **Key flags:**
@@ -113,7 +115,7 @@ ffmpeg -y -i "$VIDEO_FILE" \
   -r 24 -pix_fmt yuv420p \
   -c:a aac -b:a 192k \
   -movflags +faststart \
-  "trimmed/scene_${IDX}.mp4"
+  "${OUTDIR}/trimmed/scene_${IDX}.mp4"
 ```
 
 **CRITICAL: Do NOT use `-an`. Always preserve audio.**
@@ -124,30 +126,30 @@ ffmpeg -y -i "$VIDEO_FILE" \
 > concat_trimmed.txt
 for i in $(seq 0 $((NUM_SCENES-1))); do
   idx=$(printf "%02d" $i)
-  echo "file 'trimmed/scene_${idx}.mp4'" >> concat_trimmed.txt
+  echo "file '${OUTDIR}/trimmed/scene_${idx}.mp4'" >> concat_trimmed.txt
 done
 
 ffmpeg -y -f concat -safe 0 -i concat_trimmed.txt -c copy -movflags +faststart \
-  "${PROJECT_NAME}_narrator_cut.mp4"
+  "${OUTDIR}/${SLUG}_narrator_cut.mp4"
 ```
 
 ## Step 8: Verify and output
 
 ```bash
 # Verify final video
-ffprobe -v quiet -show_entries stream=width,height,codec_name,codec_type -of csv=p=0 "${PROJECT_NAME}_narrator_cut.mp4"
-ls -lh "${PROJECT_NAME}_narrator_cut.mp4"
-ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${PROJECT_NAME}_narrator_cut.mp4"
+ffprobe -v quiet -show_entries stream=width,height,codec_name,codec_type -of csv=p=0 "${OUTDIR}/${SLUG}_narrator_cut.mp4"
+ls -lh "${OUTDIR}/${SLUG}_narrator_cut.mp4"
+ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${OUTDIR}/${SLUG}_narrator_cut.mp4"
 
 # Verify audio is present
-ffmpeg -t 10 -i "${PROJECT_NAME}_narrator_cut.mp4" -af "volumedetect" -f null /dev/null 2>&1 | grep "mean_volume"
+ffmpeg -t 10 -i "${OUTDIR}/${SLUG}_narrator_cut.mp4" -af "volumedetect" -f null /dev/null 2>&1 | grep "mean_volume"
 # mean_volume should be between -30 and -10 dB (not -inf)
 ```
 
 Print:
 ```
 Narrator-fit concat complete: <project_name>
-  Output: output/<project_name>/<filename>.mp4
+  Output: ${OUTDIR}/${SLUG}_narrator_cut.mp4
   Duration: X:XX (saved Ys vs full 8s scenes)
   Resolution: WxH
   Audio: AAC (SFX 30% + TTS narrator 150%)

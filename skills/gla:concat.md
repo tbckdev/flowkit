@@ -19,7 +19,7 @@ Sort scenes by `display_order`.
 ## Step 2: Determine video source for each scene
 
 Priority order for each scene:
-1. **Local 4K file:** `output/4k_raw/{scene_id}.mp4` (saved from rawBytes — best quality)
+1. **Local 4K file:** `${OUTDIR}/4k/{scene_id}.mp4` (saved from rawBytes — best quality)
 2. **Upscale URL:** `horizontal_upscale_url` or `vertical_upscale_url` (4K signed URL — may be expired)
 3. **Video URL:** `horizontal_video_url` or `vertical_video_url` (standard quality)
 
@@ -30,18 +30,21 @@ Check orientation from project or first scene. Use matching prefix (`horizontal_
 ## Step 3: Setup output directory
 
 ```bash
-PROJECT_NAME="<sanitized_project_name>"  # lowercase, spaces→underscores
-mkdir -p output/${PROJECT_NAME}/{4k,narrated,norm}
+# Get project output directory (creates dir + meta.json if needed)
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+SLUG=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['slug'])")
+mkdir -p "${OUTDIR}/4k" "${OUTDIR}/narrated" "${OUTDIR}/norm"
 ```
 
 ## Step 4: Download videos (skip if local file exists)
 
 ```bash
 # For each scene, check local first
-if [ -f "output/4k_raw/${SCENE_ID}.mp4" ]; then
-  cp "output/4k_raw/${SCENE_ID}.mp4" "output/${PROJECT_NAME}/4k/scene_${IDX}.mp4"
+if [ -f "${OUTDIR}/4k/${SCENE_ID}.mp4" ]; then
+  cp "${OUTDIR}/4k/${SCENE_ID}.mp4" "${OUTDIR}/4k/scene_${IDX}.mp4"
 else
-  curl -L -o "output/${PROJECT_NAME}/4k/scene_${IDX}.mp4" "${UPSCALE_URL_OR_VIDEO_URL}"
+  curl -L -o "${OUTDIR}/4k/scene_${IDX}.mp4" "${UPSCALE_URL_OR_VIDEO_URL}"
 fi
 ```
 
@@ -72,8 +75,7 @@ Mix TTS audio WITH video sound effects using `amix` filter:
 
 ```bash
 # Find matching TTS wav
-TTS_WAV="output/${PROJECT_NAME}/tts/scene_${IDX3}_${SCENE_ID}.wav"
-# OR from: output/tts/${VIDEO_ID}/scene_${IDX3}_${SCENE_ID}.wav
+TTS_WAV="${OUTDIR}/tts/scene_${IDX3}_${SCENE_ID}.wav"
 
 if [ -f "$TTS_WAV" ]; then
   # MIX: video SFX at 30% volume + TTS narrator at 150% volume
@@ -110,26 +112,26 @@ for i in $(seq 0 $((NUM_SCENES-1))); do
 done
 
 ffmpeg -y -f concat -safe 0 -i concat.txt -c copy -movflags +faststart \
-  "${PROJECT_NAME}_final.mp4"
+  "${OUTDIR}/${SLUG}_final.mp4"
 ```
 
 ## Step 8: Verify and output
 
 ```bash
 # Verify final video
-ffprobe -v quiet -show_entries stream=width,height,codec_name,codec_type -of csv=p=0 "${PROJECT_NAME}_final.mp4"
-ls -lh "${PROJECT_NAME}_final.mp4"
-ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${PROJECT_NAME}_final.mp4"
+ffprobe -v quiet -show_entries stream=width,height,codec_name,codec_type -of csv=p=0 "${OUTDIR}/${SLUG}_final.mp4"
+ls -lh "${OUTDIR}/${SLUG}_final.mp4"
+ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${OUTDIR}/${SLUG}_final.mp4"
 
 # Verify audio is present (not silent)
-ffmpeg -t 10 -i "${PROJECT_NAME}_final.mp4" -af "volumedetect" -f null /dev/null 2>&1 | grep "mean_volume"
+ffmpeg -t 10 -i "${OUTDIR}/${SLUG}_final.mp4" -af "volumedetect" -f null /dev/null 2>&1 | grep "mean_volume"
 # mean_volume should be between -30 and -10 dB (not -inf which means silent)
 ```
 
 Print:
 ```
 Concat complete: <project_name>
-  Output: output/<project_name>/<filename>.mp4
+  Output: ${OUTDIR}/${SLUG}_final.mp4
   Duration: X:XX
   Resolution: WxH
   Audio: AAC (SFX + TTS narrator) or AAC (SFX only)
@@ -144,5 +146,5 @@ Concat complete: <project_name>
 | No audio in final | Used `-an` in normalize step | Remove `-an`, use `-c:a aac` |
 | TTS not audible | TTS wav not mixed, only video audio used | Use `amix` filter with `-filter_complex` |
 | Video is 1080p not 4K | Normalize used wrong scale | Match source resolution, never downscale |
-| Signed URL expired | GCS URLs have ~8h TTL | Check local `output/4k_raw/` files first |
+| Signed URL expired | GCS URLs have ~8h TTL | Check local `${OUTDIR}/4k/` files first |
 | Scene order wrong | Not sorted by display_order | Sort scenes before processing |

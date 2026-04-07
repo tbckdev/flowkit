@@ -34,7 +34,7 @@ If templates exist, list them and ask user which to use (or default to the first
 
 Also check for `ref_audio` files:
 ```bash
-ls output/tts/voice_template_*.wav 2>/dev/null
+ls output/_shared/tts_templates/voice_template_*.wav 2>/dev/null
 ```
 
 User can specify a template name OR a ref_audio path directly.
@@ -152,9 +152,9 @@ for scene in scenes:
         "text": "<scene_narrator_text>",
         "ref_audio": "<path_to_voice_template.wav>",
         "ref_text": "<exact_transcript_of_voice_template>",
-        "speed": 1.1
+        "speed": 1.1,
+        "output_path": "${OUTDIR}/tts/scene_{IDX3}_{scene_id}.wav"
       }'
-    # Move output to: output/tts/<VID>/scene_{IDX3}_{scene_id}.wav
 ```
 
 ### Where does `ref_text` come from?
@@ -173,32 +173,31 @@ The `ref_text` is the **exact transcript** of what's spoken in `ref_audio`.
 
 **mix: false** — we don't mix here. Mixing happens in `/gla:concat-fit-narrator`.
 
-## Step 7: Copy TTS to project directory
-
-TTS files are generated to `output/tts/<video_id>/`. Copy them to the project directory:
+## Step 7: Setup output directory
 
 ```bash
-PROJECT_NAME="<sanitized_project_name>"
-mkdir -p output/${PROJECT_NAME}/tts
-cp output/tts/<VID>/scene_*.wav output/${PROJECT_NAME}/tts/
+# Get project output directory (creates dir + meta.json if needed)
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+mkdir -p "${OUTDIR}/tts"
 ```
 
 Verify file naming matches expected pattern:
 ```
-scene_000_<scene_id>.wav
-scene_001_<scene_id>.wav
+${OUTDIR}/tts/scene_000_<scene_id>.wav
+${OUTDIR}/tts/scene_001_<scene_id>.wav
 ...
-scene_039_<scene_id>.wav
+${OUTDIR}/tts/scene_039_<scene_id>.wav
 ```
 
 ## Step 8: Verify and output
 
 ```bash
-ls output/${PROJECT_NAME}/tts/scene_*.wav | wc -l
+ls "${OUTDIR}/tts/scene_*.wav" | wc -l
 # Should match number of scenes with narrator_text
 
 # Check a few durations
-for f in $(ls output/${PROJECT_NAME}/tts/scene_00*.wav | head -5); do
+for f in $(ls "${OUTDIR}/tts/scene_00*.wav" | head -5); do
   echo "$(basename $f): $(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$f")s"
 done
 ```
@@ -211,7 +210,7 @@ Narrator generation complete: <project_name>
   Voice: <template_name or ref_audio>
   Speed: 1.1x
   Total narration: XXXs
-  Output: output/<project_name>/tts/
+  Output: ${OUTDIR}/tts/
 
   Next step: /gla:concat-fit-narrator <video_id>
 ```
@@ -236,5 +235,5 @@ When writing narrator text for 30-40 scenes, follow a narrative arc:
 | Narrator text too long | Exceeds word count | Keep under 35 VN / 30 EN words |
 | Dead air in scene | Narrator text too short | Aim for 25+ VN / 20+ EN words |
 | Wrong language | Didn't match project language | Use --language flag or check project.language |
-| TTS files not found by concat | Wrong output path | Copy to output/{project}/tts/ |
+| TTS files not found by concat | Wrong output path | Copy to ${OUTDIR}/tts/ |
 | Narrator describes visuals | Bad writing style | Remove "we see", describe context/stakes instead |

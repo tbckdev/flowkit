@@ -57,6 +57,7 @@ def _save_raw_bytes(operations: list[dict], scene_id: str, project_id: str) -> s
             continue
         try:
             video_data = base64.b64decode(raw_b64)
+            # TODO: move to output/{project_slug}/4k/ once output-dir endpoint is integrated
             out_dir = _PROJECT_ROOT / "output" / "4k_raw"
             out_dir.mkdir(parents=True, exist_ok=True)
             path = out_dir / f"{scene_id}.mp4"

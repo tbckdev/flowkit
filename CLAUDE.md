@@ -223,24 +223,41 @@ curl -X POST http://127.0.0.1:8100/api/requests \
 ### W7: Download + Concat Videos
 
 ```bash
+# Get project output dir (creates dir + meta.json)
+OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+# e.g. OUT=output/chien_dich_giai_cuu_f_15e
+
 # Get scene video URLs
 curl -s "http://127.0.0.1:8100/api/scenes?video_id=<VID>"
 # Extract vertical_video_url (or vertical_upscale_url if upscaled) for each scene
 
-# Download each scene video, then concat with ffmpeg:
-# 1. Normalize (same codec/resolution/fps)
-ffmpeg -y -i scene_1.mp4 -c:v libx264 -preset fast -crf 18 \
+# Download each scene video into output dir:
+# curl -s "<vertical_video_url>" -o "${OUT}/scenes/scene_01.mp4"
+# (for 4K: save to ${OUT}/4k/scene_01.mp4)
+
+# Concat with ffmpeg:
+# 1. Normalize (same codec/resolution/fps) into ${OUT}/norm/
+ffmpeg -y -i "${OUT}/scenes/scene_1.mp4" -c:v libx264 -preset fast -crf 18 \
   -vf "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2" \
-  -r 24 -pix_fmt yuv420p -an scene_1_norm.mp4
+  -r 24 -pix_fmt yuv420p -an "${OUT}/norm/scene_1_norm.mp4"
 
 # 2. Create concat list
-echo "file 'scene_1_norm.mp4'" > concat.txt
-echo "file 'scene_2_norm.mp4'" >> concat.txt
+echo "file '${OUT}/norm/scene_1_norm.mp4'" > concat.txt
+echo "file '${OUT}/norm/scene_2_norm.mp4'" >> concat.txt
 # ...
 
-# 3. Concat
-ffmpeg -y -f concat -safe 0 -i concat.txt -c copy -movflags +faststart output.mp4
+# 3. Concat to final output
+SLUG=$(basename "$OUT")
+ffmpeg -y -f concat -safe 0 -i concat.txt -c copy -movflags +faststart "${OUT}/${SLUG}_final.mp4"
 ```
+
+### W8: Get Project Output Directory
+
+```bash
+curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir
+```
+
+Returns slug + path + meta. Auto-creates directory structure + meta.json on first call.
 
 ---
 
@@ -249,6 +266,7 @@ ffmpeg -y -f concat -safe 0 -i concat.txt -c copy -movflags +faststart output.mp
 ```
 0.  Health check          GET  /health → extension_connected: true
 2.  Create project        POST /api/projects (with entities + material)
+2.5 Get output dir        GET  /api/projects/{pid}/output-dir (creates dir + meta.json)
 3.  Create video          POST /api/videos
 4.  Create scenes         POST /api/scenes (with character_names, chain_type, narrator_text)
 5.  Gen ref images        POST /api/requests {type: GENERATE_CHARACTER_IMAGE} per entity
@@ -296,6 +314,7 @@ ffmpeg -y -f concat -safe 0 -i concat.txt -c copy -movflags +faststart output.mp
 | `GET /api/requests/pending` | List pending requests |
 | `GET /api/projects/{pid}/characters` | List entities linked to project |
 | `POST /api/projects/{pid}/characters/{cid}` | Link entity to project |
+| `GET /api/projects/{pid}/output-dir` | Get/create project output directory + meta.json |
 | `WS /ws/dashboard` | Real-time push events to extension side panel |
 
 ### Request Types (for POST /api/requests)
@@ -402,7 +421,22 @@ agent/
 extension/             — Chrome MV3 extension (WS client, reCAPTCHA, API proxy)
 scripts/               — Seed/utility scripts
   statusline.sh        — Claude Code statusline script
-output/                — Generated video output
+output/                — Project video output (structured per-project)
+  _shared/             — Shared assets (TTS templates, music)
+    tts_templates/     — Voice templates for narration
+    music/             — Generated music tracks
+  {project_slug}/      — Per-project output (slugified name)
+    meta.json          — Project metadata (id, name, slug, orientation)
+    scenes/            — Raw scene videos from API
+    4k/                — 4K raw bytes from API
+    tts/               — TTS narration WAVs
+    narrated/          — Scenes with TTS mixed in
+    trimmed/           — Duration-trimmed scenes
+    norm/              — Normalized (codec/res/fps)
+    thumbnails/        — Generated thumbnail PNGs
+    subclips/          — YouTube-ready branded clips
+    review/            — Video review contact sheets
+    {slug}_final.mp4   — Final concatenated video
 youtube/
   auth.py              — OAuth2 multi-channel auth (run: python3 youtube/auth.py <channel>)
   upload.py            — Upload with scheduling + channel rule validation
@@ -415,6 +449,38 @@ youtube/
       <channel>_icon.png    — Brand logo for /gla:brand-logo watermark overlay
       upload_history.json   — Upload log (auto-created by /gla:youtube-upload)
 skills/                — AI agent skill definitions (invoked as /gla:<name>)
+```
+
+---
+
+## Output Directory Convention
+
+Every project output goes to `output/{slug}/` where slug is the project name cleaned of unicode, diacritics, and special characters.
+
+**Get project output dir (auto-creates with meta.json):**
+```bash
+curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir
+# Returns: {"slug": "chien_dich_giai_cuu_f_15e", "path": "output/chien_dich_giai_cuu_f_15e", "meta": {...}}
+```
+
+**Slugify rules:** strip diacritics → lowercase → non-alphanum to `_` → collapse `__` → trim edges.
+- "Chiến dịch giải cứu F-15E" → `chien_dich_giai_cuu_f_15e`
+- "A Day in My Life (Realistic)" → `a_day_in_my_life_realistic`
+
+**Shared assets** (not project-scoped): `output/_shared/tts_templates/`, `output/_shared/music/`
+
+**meta.json** is auto-created in each project dir on first access:
+```json
+{
+  "project_id": "uuid",
+  "project_name": "Original Name With Unicode",
+  "slug": "clean_slug",
+  "video_id": "uuid",
+  "orientation": "VERTICAL",
+  "material": "realistic",
+  "scene_count": 40,
+  "created_at": "ISO8601"
+}
 ```
 
 ---

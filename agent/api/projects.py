@@ -1,15 +1,19 @@
+import json
 import logging
 import pathlib
 import re
+from datetime import datetime, timezone
 
 import aiohttp
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from agent.config import BASE_DIR
 from agent.models.project import Project, ProjectCreate, ProjectUpdate
 from agent.models.character import Character
 from agent.sdk.persistence.sqlite_repository import SQLiteRepository
 from agent.services.flow_client import get_flow_client
+from agent.utils.slugify import slugify
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +266,48 @@ async def unlink_character(pid: str, cid: str):
 async def get_characters(pid: str):
     repo = _get_repo()
     return await repo.get_project_characters(pid)
+
+
+@router.get("/{pid}/output-dir")
+async def get_output_dir(pid: str):
+    """Get or create project output directory with meta.json."""
+    repo = _get_repo()
+    project = await repo.get_project(pid)
+    if not project:
+        raise HTTPException(404, "Project not found")
+
+    project_name = project.name if hasattr(project, "name") else project["name"]
+    slug = slugify(project_name)
+    output_dir = BASE_DIR / "output" / slug
+
+    for subdir in ["scenes", "4k", "tts", "narrated", "trimmed", "norm", "thumbnails", "subclips", "review"]:
+        (output_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    videos = await repo.list_videos(pid)
+    video_id = videos[0].id if videos else None
+    scene_count = 0
+    if video_id:
+        scenes = await repo.list_scenes(video_id)
+        scene_count = len(scenes) if scenes else 0
+
+    now = datetime.now(timezone.utc).isoformat()
+    meta = {
+        "project_id": pid,
+        "project_name": project_name,
+        "slug": slug,
+        "video_id": video_id,
+        "orientation": getattr(project, "orientation", None) or (project.get("orientation") if isinstance(project, dict) else None) or "VERTICAL",
+        "material": getattr(project, "material", None) or (project.get("material") if isinstance(project, dict) else None) or "",
+        "scene_count": scene_count,
+        "created_at": now,
+    }
+    meta_path = output_dir / "meta.json"
+    if meta_path.exists():
+        existing = json.loads(meta_path.read_text())
+        meta["created_at"] = existing.get("created_at", now)
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False))
+
+    return {"slug": slug, "path": f"output/{slug}", "meta": meta}
 
 
 _PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[2]

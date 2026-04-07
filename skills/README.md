@@ -225,14 +225,17 @@ Run /gla:concat v-xxx to download and merge.
 ### 5. `/gla:concat v-xxx`
 
 ```
-Downloading scene 1... 2.1 MB → output/luna/scene_1.mp4
-Downloading scene 2... 3.4 MB → output/luna/scene_2.mp4
-Downloading scene 3... 2.8 MB → output/luna/scene_3.mp4
-Normalizing (720x1280, 24fps, h264)...
+Getting output dir from API...
+OUTDIR=output/luna_the_space_cat
+
+Downloading scene 1... 2.1 MB → output/luna_the_space_cat/scenes/scene_1.mp4
+Downloading scene 2... 3.4 MB → output/luna_the_space_cat/scenes/scene_2.mp4
+Downloading scene 3... 2.8 MB → output/luna_the_space_cat/scenes/scene_3.mp4
+Normalizing (720x1280, 24fps, h264) → output/luna_the_space_cat/norm/
 Concatenating 3 scenes...
 
 Done!
-  output/luna/luna_full.mp4
+  output/luna_the_space_cat/luna_the_space_cat_final.mp4
   720x1280 (vertical)
   24 seconds
   8.3 MB

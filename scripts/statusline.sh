@@ -120,16 +120,14 @@ proj_slug=$(echo "$proj_name" | iconv -f UTF-8 -t ASCII//TRANSLIT 2>/dev/null | 
 
 # 4K downloaded count
 dl_count=0
-if [ -d "output/${proj_slug}/4k_raw" ]; then
-  dl_count=$(ls "output/${proj_slug}/4k_raw"/*.mp4 2>/dev/null | wc -l | tr -d ' ')
+if [ -d "output/${proj_slug}/4k" ]; then
+  dl_count=$(ls "output/${proj_slug}/4k"/*.mp4 2>/dev/null | wc -l | tr -d ' ')
 fi
 
 # TTS count
 tts_count=0
 if [ -d "output/${proj_slug}/tts" ]; then
   tts_count=$(ls "output/${proj_slug}/tts"/scene_*.wav 2>/dev/null | wc -l | tr -d ' ')
-elif [ -d "output/tts/${vid_id}" ]; then
-  tts_count=$(ls "output/tts/${vid_id}"/scene_*.wav 2>/dev/null | wc -l | tr -d ' ')
 fi
 
 flow_str=""

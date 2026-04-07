@@ -100,7 +100,7 @@ curl -X POST http://127.0.0.1:8100/api/music/clips/<CLIP_ID>/poll
 
 ```bash
 curl -X POST http://127.0.0.1:8100/api/music/clips/<CLIP_ID>/download
-# Returns: {"path": "output/music/title_abcd1234.mp3", ...}
+# Returns: {"path": "output/_shared/music/title_abcd1234.mp3", ...}
 ```
 
 ### Step 5: Use in Video (Optional)
@@ -108,10 +108,15 @@ curl -X POST http://127.0.0.1:8100/api/music/clips/<CLIP_ID>/download
 Add the downloaded music as background for your concat video:
 
 ```bash
+# Get project output directory
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+SLUG=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['slug'])")
+
 # Mix music with concat video using ffmpeg
-ffmpeg -y -i output/project/final.mp4 -i output/music/track.mp3 \
+ffmpeg -y -i "${OUTDIR}/${SLUG}_final.mp4" -i output/_shared/music/track.mp3 \
   -filter_complex "[1:a]volume=0.3[bg]; [0:a][bg]amix=inputs=2:duration=first[out]" \
-  -map 0:v -map "[out]" -c:v copy -c:a aac output/project/final_with_music.mp4
+  -map 0:v -map "[out]" -c:v copy -c:a aac "${OUTDIR}/${SLUG}_with_music.mp4"
 ```
 
 ## Generate Lyrics Only

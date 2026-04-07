@@ -56,7 +56,11 @@ ffmpeg -y -i "$VIDEO" -i "$ICON" \
 ## Step 4: Apply to thumbnails (if --thumbnails)
 
 ```bash
-for thumb in output/${PROJECT}/thumbnail_v*_yt.png; do
+# Get project output directory
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+
+for thumb in "${OUTDIR}/thumbnails/thumbnail_v"*_yt.png; do
   ffmpeg -y -i "$thumb" -i "$ICON" \
     -filter_complex "[1:v]scale=72:72[icon];[0:v][icon]overlay=W-w-16:H-h-16" \
     "${thumb%_yt.png}_final.png" 2>/dev/null

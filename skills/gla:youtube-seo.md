@@ -309,8 +309,10 @@ Print each section with clear separators so they can copy individual parts.
 Also save a backup copy to project directory for reference:
 
 ```bash
-mkdir -p output/${PROJECT_NAME}
-cat > output/${PROJECT_NAME}/youtube_seo.md << 'EOF'
+# Get project output directory
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+cat > "${OUTDIR}/youtube_seo.md" << 'EOF'
 {all_metadata_formatted}
 EOF
 ```

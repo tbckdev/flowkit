@@ -101,6 +101,11 @@ If character refs fail (400 error), retry without refs but warn user.
 SEQUENTIALLY with 8s cooldown between each:
 
 ```bash
+# Get project output directory
+PROJ_OUT=$(curl -s http://127.0.0.1:8100/api/projects/<PID>/output-dir)
+OUTDIR=$(echo "$PROJ_OUT" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+mkdir -p "${OUTDIR}/thumbnails"
+
 for i in 1 2 3 4; do
   curl -s -m 90 -X POST "http://127.0.0.1:8100/api/projects/<PID>/generate-thumbnail" \
     -H "Content-Type: application/json" \
@@ -121,9 +126,9 @@ If 400 (missing refs): retry without character_names.
 
 ```bash
 for i in 1 2 3 4; do
-  ffmpeg -y -i "${DIR}/thumbnail_v${i}.png" \
+  ffmpeg -y -i "${OUTDIR}/thumbnails/thumbnail_v${i}.png" \
     -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:color=black" \
-    "${DIR}/thumbnail_v${i}_yt.png" 2>/dev/null
+    "${OUTDIR}/thumbnails/thumbnail_v${i}_yt.png" 2>/dev/null
 done
 ```
 
@@ -155,5 +160,5 @@ V2 (Action+Text): [RATING] — thumbnail_v2_yt.png
 V3 (Confrontation+Text): [RATING] — thumbnail_v3_yt.png
 V4 (Mystery+Text): [RATING] — thumbnail_v4_yt.png
 
-Files: output/<project>/thumbnail_v*_yt.png (1280x720)
+Files: ${OUTDIR}/thumbnails/thumbnail_v*_yt.png (1280x720)
 ```

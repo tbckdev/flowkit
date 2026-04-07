@@ -8,10 +8,10 @@ Usage: `/gla:youtube-upload <channel_name> <video_path_or_dir> [--schedule "time
 
 ```bash
 # Single video
-VIDEO="output/project/subclips/clip_01_branded.mp4"
+VIDEO="${OUTDIR}/subclips/clip_01_branded.mp4"
 
 # Batch: directory of *_branded.mp4 files
-VIDEO_DIR="output/project/subclips/"
+VIDEO_DIR="${OUTDIR}/subclips/"
 ```
 
 **Auto-detect Short vs Long** using `youtube/upload.py`:
@@ -166,9 +166,9 @@ Confirm with /gla:youtube-upload chiensudachieu output/subclips/ --batch
 # 2. Brand all clips (run brand-logo)
 # 3. Upload batch with auto-schedule:
 
-/gla:youtube-upload chiensudachieu output/dau_mo_eo_bien_hormuz/subclips/ --batch --dry-run
+/gla:youtube-upload chiensudachieu ${OUTDIR}/subclips/ --batch --dry-run
 # Review schedule, then:
-/gla:youtube-upload chiensudachieu output/dau_mo_eo_bien_hormuz/subclips/ --batch
+/gla:youtube-upload chiensudachieu ${OUTDIR}/subclips/ --batch
 ```
 
 ## Channel Directory Reference

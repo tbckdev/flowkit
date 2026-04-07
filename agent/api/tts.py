@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from agent.config import TTS_OUTPUT_DIR
+from agent.config import TTS_TEMPLATES_DIR, SHARED_OUTPUT_DIR, OUTPUT_DIR
 from agent.db.crud import get_video, list_scenes, get_project
 from agent.models.tts import (
     TTSGenerateRequest,
@@ -26,14 +26,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["tts"])
 
-TEMPLATES_DIR = TTS_OUTPUT_DIR / "templates"
+TEMPLATES_DIR = TTS_TEMPLATES_DIR
 TEMPLATES_META = TEMPLATES_DIR / "templates.json"
 
 # Semaphore: max 2 concurrent TTS generations to prevent resource abuse
 _TTS_SEMAPHORE = asyncio.Semaphore(2)
 
 # Allowed base directories for ref_audio paths
-_ALLOWED_REF_AUDIO_DIRS = [TTS_OUTPUT_DIR]
+_ALLOWED_REF_AUDIO_DIRS = [SHARED_OUTPUT_DIR, OUTPUT_DIR]
 
 _TEMPLATE_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
 
@@ -53,7 +53,7 @@ def _validate_ref_audio(ref_audio: str) -> None:
     except Exception:
         raise HTTPException(400, "Invalid ref_audio path")
 
-    allowed = [TTS_OUTPUT_DIR.resolve()]
+    allowed = [d.resolve() for d in _ALLOWED_REF_AUDIO_DIRS]
     try:
         allowed.append(TEMPLATES_DIR.resolve())
     except Exception:
@@ -69,9 +69,9 @@ async def tts_generate(body: TTSGenerateRequest):
     if body.ref_audio:
         _validate_ref_audio(body.ref_audio)
 
-    TTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    SHARED_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     import uuid as _uuid
-    out_path = str(TTS_OUTPUT_DIR / f"{_uuid.uuid4()}.wav")
+    out_path = str(SHARED_OUTPUT_DIR / f"{_uuid.uuid4()}.wav")
 
     async with _TTS_SEMAPHORE:
         try:
@@ -136,7 +136,8 @@ async def narrate_video(vid: str, body: NarrateVideoRequest):
                 logger.info("Auto-resolved ref_text from template '%s'", tmpl["name"])
                 break
 
-    out_dir = TTS_OUTPUT_DIR / vid
+    # TODO: move to OUTPUT_DIR / slugify(project_name) / "tts" once output-dir endpoint is integrated
+    out_dir = OUTPUT_DIR / vid
     out_dir.mkdir(parents=True, exist_ok=True)
 
     async with _TTS_SEMAPHORE:

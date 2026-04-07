@@ -8,7 +8,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from agent.config import SUNO_OUTPUT_DIR
+from agent.config import MUSIC_OUTPUT_DIR
 from agent.services.suno import get_suno_client
 
 logger = logging.getLogger(__name__)
@@ -157,10 +157,10 @@ async def download_clip(clip_id: str):
     if not audio_url:
         raise HTTPException(400, "No audio_url on clip")
 
-    SUNO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    MUSIC_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     title = clip.get("title", "untitled").replace("/", "_").replace(" ", "_")[:50]
     filename = f"{title}_{clip_id[:8]}.mp3"
-    out_path = SUNO_OUTPUT_DIR / filename
+    out_path = MUSIC_OUTPUT_DIR / filename
 
     async with httpx.AsyncClient(timeout=60) as http:
         r = await http.get(audio_url)

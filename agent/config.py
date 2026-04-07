@@ -52,11 +52,16 @@ ENDPOINTS = {
     "get_media": "/v1/media/{media_id}",
 }
 
+# ─── Output Directories ─────────────────────────────────────
+OUTPUT_DIR = BASE_DIR / "output"
+SHARED_OUTPUT_DIR = OUTPUT_DIR / "_shared"
+TTS_TEMPLATES_DIR = SHARED_OUTPUT_DIR / "tts_templates"
+MUSIC_OUTPUT_DIR = SHARED_OUTPUT_DIR / "music"
+
 # ─── TTS (OmniVoice) ─────────────────────────────────────────
 TTS_MODEL = os.environ.get("TTS_MODEL", "k2-fsa/OmniVoice")
 TTS_DEVICE = os.environ.get("TTS_DEVICE", "cpu")  # MPS produces gibberish; CPU+fp32 works
 TTS_SAMPLE_RATE = int(os.environ.get("TTS_SAMPLE_RATE", "24000"))
-TTS_OUTPUT_DIR = BASE_DIR / "output" / "tts"
 
 # ─── Review / Claude Vision ──────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -71,7 +76,6 @@ SUNO_BASE_URL = os.environ.get("SUNO_BASE_URL", "https://studio-api.suno.ai")
 SUNO_MODEL = os.environ.get("SUNO_MODEL", "chirp-v4")
 SUNO_POLL_INTERVAL = int(os.environ.get("SUNO_POLL_INTERVAL", "5"))
 SUNO_POLL_TIMEOUT = int(os.environ.get("SUNO_POLL_TIMEOUT", "300"))
-SUNO_OUTPUT_DIR = BASE_DIR / "output" / "music"
 
 # ─── Header Randomization Pools ─────────────────────────────
 USER_AGENTS = [
