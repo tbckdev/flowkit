@@ -39,6 +39,7 @@ curl -s http://127.0.0.1:8100/health
 19. **Token auto-refresh** — Extension refreshes token every 45 min. Auto-opens Flow tab if none exists. Side panel warns when token stale (>60 min). Resends cached token on WS reconnect.
 20. **No throwaway scripts** — NEVER write a Python script, shell script, or any file to loop over API requests. All operations must be done inline with `curl` calls. To submit N requests, use `POST /api/requests/batch`. The server throttles automatically — no loops needed.
 21. **Scenes are mutable** — use `PATCH /api/scenes/{sid}` to update `prompt`, `video_prompt`, `narrator_text`, `character_names` after creation. Don't delete and recreate — patch instead.
+22. **Fact-check before scripting** — ALWAYS research events via web search before writing project stories, scene prompts, or narrator text. Facts (events, dates, names, operations, outcomes) MUST match real sources. Editorial opinion and analysis are allowed but must be framed as such. Never invent events, operation names, or statistics. See `content_policy` in channel rules for full guidelines.
 
 **Complete video_prompt example:**
 ```
@@ -272,7 +273,8 @@ Returns slug + path + meta. Auto-creates directory structure + meta.json on firs
 
 ```
 0.  Health check          GET  /health → extension_connected: true
-2.  Create project        POST /api/projects (with entities + material)
+1.  Research              /gla:research "topic" (fact-check via web search, save to .omc/research/)
+2.  Create project        POST /api/projects (with entities + material, story from research)
 2.5 Get output dir        GET  /api/projects/{pid}/output-dir (creates dir + meta.json)
 3.  Create video          POST /api/videos
 4.  Create scenes         POST /api/scenes (with character_names, chain_type, narrator_text)

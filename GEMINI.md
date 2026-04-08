@@ -26,12 +26,14 @@ curl -s http://127.0.0.1:8100/health
 11. **Video prompts use sub-clip timing** — structure 8s video as time segments: `0-3s: [action]. 3-6s: [action]. 6-8s: [action].`
 12. **Character dialogue in sub-clips** — embed speech in quotes: `Luna says "Goodnight."` Max 10-15 words per character per 2-3s segment.
 13. **Scenes are mutable** — use `PATCH /api/scenes/{sid}` to update `prompt`, `video_prompt`, `narrator_text`, `character_names` after creation. Don't delete and recreate — patch instead.
+14. **Fact-check before scripting** — ALWAYS research events via web search before writing project stories, scene prompts, or narrator text. Facts (events, dates, names, operations, outcomes) MUST match real sources. Editorial opinion and analysis are allowed but must be framed as such. Never invent events, operation names, or statistics.
 
 ## Pipeline Order
 
 ```
+0. Research          /gla:research "topic" (fact-check via web search, save to .omc/research/)
 1. Health check      GET  /health → extension_connected: true
-2. Create project    POST /api/projects (with entities + material)
+2. Create project    POST /api/projects (with entities + material, story from research)
 3. Create video      POST /api/videos
 4. Create scenes     POST /api/scenes (with character_names, chain_type)
 5. Gen ref images    POST /api/requests/batch → poll /batch-status?project_id=<PID>
@@ -90,6 +92,7 @@ This project has reusable skills in `skills/`. When the user says `/gla:<name>`,
 | `/gla:gen-tts` | gla:gen-tts — Generate TTS Narration |
 | `/gla:gen-videos` | Generate videos for all scenes in a video. |
 | `/gla:insert-scene` | Insert new scene(s) into an existing video chain — for multi-angle shots, cutaways, or close-ups. |
+| `/gla:research` | Fact-check & research real events via web search before scripting documentary content. |
 | `/gla:review-video` | Review AI-generated scene videos for quality using Claude Vision. |
 | `/gla:status` | Show full status dashboard for a project. |
 | `/gla:thumbnail-guide` | YouTube Thumbnail Guide — Hook-Worthy Design Rules |

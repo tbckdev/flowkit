@@ -34,6 +34,7 @@ Extract from `seo` section:
 - **`hashtag_language`** → controls language mix strategy (e.g., `mixed_vi_en`)
 - **`title_max_chars`** → enforce as hard limit in Step 3 (default: 65)
 - **`default_category`** → use as YouTube category ID
+- **`content_policy.ai_disclosure`** → insert verbatim in Zone 3 of description (before footer keywords). If present, this AI disclosure MUST appear in every generated description. This discloses that visuals are AI-generated while content is based on real events.
 
 If no channel rules file exists, fall back to detecting niche from project content and using skill defaults.
 
@@ -145,7 +146,9 @@ Turn on notifications 🔔 to never miss a video.
 📖 Background:
 {real_world_context_2_3_sentences}
 
-[Zone 3 — Footer]
+[Zone 3 — AI Disclosure + Footer]
+{ai_disclosure_from_content_policy_if_present}
+
 {keyword_rich_sentences}
 
 #hashtag1 #hashtag2 #hashtag3 ... #hashtag15
