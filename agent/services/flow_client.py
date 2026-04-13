@@ -441,7 +441,7 @@ class FlowClient:
                 {"mediaId": mid, "imageUsageType": "IMAGE_USAGE_TYPE_ASSET"}
                 for mid in reference_media_ids
             ],
-            "metadata": {"sceneId": scene_id},
+            "metadata": {},
         }
 
         body = {

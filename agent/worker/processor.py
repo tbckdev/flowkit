@@ -202,10 +202,13 @@ async def _prerequisites_met(req: dict, orientation: str) -> bool:
                 scene = await crud.get_scene(req.get("scene_id"))
                 if not scene:
                     return True  # let _dispatch handle
-                src = scene.get(f"{prefix}_image_media_id")
-                if not src and scene.get("parent_scene_id"):
+                # CONTINUATION scenes always use parent's image as source
+                src = None
+                if scene.get("parent_scene_id"):
                     parent = await crud.get_scene(scene["parent_scene_id"])
                     src = parent.get(f"{prefix}_image_media_id") if parent else None
+                if not src:
+                    src = scene.get(f"{prefix}_image_media_id")
                 logger.info("EDIT_IMAGE prereq: scene=%s src=%s parent=%s", req.get("scene_id","")[:12], src, scene.get("parent_scene_id","")[:12] if scene.get("parent_scene_id") else "none")
                 if not src:
                     return False

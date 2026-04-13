@@ -65,5 +65,13 @@ Print: "All videos ready. Run /gla:concat <VID> to download and merge."
 
 ## Important rules
 
-- **GENERATE vs REGENERATE:** `GENERATE_VIDEO` skips scenes already `COMPLETED`. To force-regenerate, submit a new request (cascades: clears upscale status).
+- **GENERATE vs REGENERATE:** `GENERATE_VIDEO` skips scenes already `COMPLETED`. To force-regenerate, reset `${ori}_video_status` to `PENDING` first, then submit.
 - **Cascade on regen:** Regenerating a video auto-clears the upscale status for that scene.
+- **Chain video prompt rule (CRITICAL):** Chain scenes with children use `transition_prompt` for video generation, NOT `video_prompt`. This is because the video transitions from the current scene's image to the child scene's image. When fixing chain scene videos, always update `transition_prompt`. `video_prompt` is only used for ROOT scenes or leaf scenes (no children).
+- **Chain cascade (CRITICAL):** When regenerating a scene that has CONTINUATION children, you MUST also regenerate images + videos for all descendants in the chain. The child's image was EDIT_IMAGE'd from the parent's old image — if the parent's video changes, the child's start frame won't match the parent's end frame.
+  - Walk the full chain to the leaf: `parent_scene_id` links form the chain
+  - Regen child images **sequentially** (each child depends on parent completing first)
+  - **Update `end_scene_media_id`**: After each child image regen completes, PATCH parent's `${ori}_end_scene_media_id` = child's new `${ori}_image_media_id`. This is CRITICAL — without it, video gen uses stale end frame and the video won't transition to the child's image.
+  - After all images complete + end_scene_media_ids updated, regen the **parent video too** (so its end frame matches child's new start image)
+  - Then batch regen videos for all children (parent + children can be parallel)
+  - **Always proactively propose this cascade to the user** — don't wait for them to notice the mismatch

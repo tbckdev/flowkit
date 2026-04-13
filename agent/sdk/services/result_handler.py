@@ -56,6 +56,14 @@ async def apply_scene_result(
             f"{p}_video_media_id": None, f"{p}_video_url": None, f"{p}_video_status": "PENDING",
             f"{p}_upscale_media_id": None, f"{p}_upscale_url": None, f"{p}_upscale_status": "PENDING",
         })
+        # Chain cascade: update parent's end_scene_media_id so its video
+        # transitions to this child's new image
+        scene = await crud.get_scene(scene_id)
+        if scene and scene.get("parent_scene_id") and result.media_id:
+            await crud.update_scene(
+                scene["parent_scene_id"],
+                **{f"{p}_end_scene_media_id": result.media_id},
+            )
     elif req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
         updates.update({
             f"{p}_video_media_id": result.media_id,
