@@ -770,17 +770,24 @@ async def _build_video_prompt(base_prompt: str, scene: dict, project_id: str | N
             if voices:
                 parts.append("Character voices: " + ". ".join(voices) + ".")
 
-    # Check project-level allow_music flag — Veo 3 Audio label format
+    # Check project-level audio flags — Veo 3 Audio label format
     allow_music = False
+    allow_voice = False
     if project_id:
         project = await crud.get_project(project_id)
-        if project and project.get("allow_music"):
-            allow_music = True
+        if project:
+            if project.get("allow_music"):
+                allow_music = True
+            if project.get("allow_voice"):
+                allow_voice = True
 
     if not allow_music:
         # Only append if prompt doesn't already have Audio:/Music: labels
         if "audio:" not in prompt_lower and "music:" not in prompt_lower:
-            parts.append("Audio: natural ambient sounds only, no background music, no narration, no voiceover.")
+            if allow_voice:
+                parts.append("Audio: no background music. Keep character dialogue and natural ambient sounds.")
+            else:
+                parts.append("Audio: natural ambient sounds only, no background music, no narration, no voiceover.")
 
     # Veo 3 negative prompt — always append unless already present
     if "negative:" not in prompt_lower:

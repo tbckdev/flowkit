@@ -35,8 +35,9 @@ CREATE TABLE IF NOT EXISTS project (
     user_paygate_tier TEXT NOT NULL DEFAULT 'PAYGATE_TIER_ONE',
     narrator_voice TEXT,
     narrator_ref_audio TEXT,
-    material TEXT DEFAULT '3d_pixar',
+    material TEXT DEFAULT 'realistic',
     allow_music INTEGER NOT NULL DEFAULT 0,
+    allow_voice INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
@@ -267,8 +268,14 @@ CREATE INDEX IF NOT EXISTS idx_request_scene ON request(scene_id);
             await db.execute("ALTER TABLE project ADD COLUMN narrator_ref_audio TEXT")
             logger.info("Migrated: added narrator_ref_audio column to project table")
         if "material" not in project_columns:
-            await db.execute("ALTER TABLE project ADD COLUMN material TEXT DEFAULT '3d_pixar'")
+            await db.execute("ALTER TABLE project ADD COLUMN material TEXT DEFAULT 'realistic'")
             logger.info("Migrated: added material column to project table")
+        if "allow_music" not in project_columns:
+            await db.execute("ALTER TABLE project ADD COLUMN allow_music INTEGER NOT NULL DEFAULT 0")
+            logger.info("Migrated: added allow_music column to project table")
+        if "allow_voice" not in project_columns:
+            await db.execute("ALTER TABLE project ADD COLUMN allow_voice INTEGER NOT NULL DEFAULT 0")
+            logger.info("Migrated: added allow_voice column to project table")
         # Migration: add orientation to video table + backfill from scene data
         cursor = await db.execute("PRAGMA table_info(video)")
         video_columns = {row[1] for row in await cursor.fetchall()}

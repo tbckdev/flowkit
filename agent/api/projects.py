@@ -184,6 +184,8 @@ async def create(body: ProjectCreate):
         language=create_data.get("language", "en"),
         user_paygate_tier=detected_tier,
         material=material_id,
+        allow_music=create_data.get("allow_music", False),
+        allow_voice=create_data.get("allow_voice", False),
     )
 
     # Step 3: Create reference entities (characters, locations, assets) with profiles
