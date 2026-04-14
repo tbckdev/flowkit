@@ -21,14 +21,14 @@ from agent.sdk.services.result_handler import parse_result, apply_scene_result, 
 logger = logging.getLogger(__name__)
 
 _API_CALL_TYPES = {"GENERATE_IMAGE", "REGENERATE_IMAGE", "EDIT_IMAGE",
-                   "GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO",
+                   "GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO",
                    "GENERATE_CHARACTER_IMAGE", "REGENERATE_CHARACTER_IMAGE",
                    "EDIT_CHARACTER_IMAGE"}
 
 _TYPE_PRIORITY = {
     "GENERATE_CHARACTER_IMAGE": 0, "REGENERATE_CHARACTER_IMAGE": 0, "EDIT_CHARACTER_IMAGE": 0,
     "GENERATE_IMAGE": 1, "REGENERATE_IMAGE": 1, "EDIT_IMAGE": 1,
-    "GENERATE_VIDEO": 2, "GENERATE_VIDEO_REFS": 2,
+    "GENERATE_VIDEO": 2, "REGENERATE_VIDEO": 2, "GENERATE_VIDEO_REFS": 2,
     "UPSCALE_VIDEO": 3,
 }
 
@@ -178,11 +178,11 @@ async def _prerequisites_met(req: dict, orientation: str) -> bool:
     prefix = "vertical" if orientation == "VERTICAL" else "horizontal"
 
     # Video gen needs scene image to be ready; upscale needs video to be ready
-    if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+    if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
         scene = await crud.get_scene(req.get("scene_id"))
         if not scene:
             return True  # let _dispatch handle "scene not found"
-        if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
+        if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
             if not scene.get(f"{prefix}_image_media_id"):
                 logger.info("VIDEO prereq deferred: scene=%s no %s_image_media_id", req.get("scene_id","")[:12], prefix)
                 return False
@@ -249,7 +249,7 @@ async def _process_one(req: dict, deferred: dict = None, retry_after: dict = Non
                 if req_type == "GENERATE_IMAGE":
                     skip_kwargs["media_id"] = scene.get(f"{prefix}_image_media_id")
                     skip_kwargs["output_url"] = scene.get(f"{prefix}_image_url")
-                elif req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
+                elif req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
                     skip_kwargs["media_id"] = scene.get(f"{prefix}_video_media_id")
                     skip_kwargs["output_url"] = scene.get(f"{prefix}_video_url")
                 elif req_type == "UPSCALE_VIDEO":
@@ -298,7 +298,7 @@ async def _dispatch(req: dict, orientation: str) -> dict:
 
     # Scene-based operations
     if req_type in ("GENERATE_IMAGE", "REGENERATE_IMAGE", "EDIT_IMAGE",
-                    "GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+                    "GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
         scene = await crud.get_scene(req.get("scene_id"))
         if not scene:
             return {"error": "Scene not found"}
@@ -308,7 +308,7 @@ async def _dispatch(req: dict, orientation: str) -> dict:
             return await ops.generate_scene_image(scene, orientation)
         if req_type == "EDIT_IMAGE":
             return await ops.edit_scene_image(scene, orientation, source_media_id=req.get("source_media_id"))
-        if req_type == "GENERATE_VIDEO":
+        if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO"):
             return await ops.generate_scene_video(scene, orientation, request_id=rid)
         if req_type == "GENERATE_VIDEO_REFS":
             return await ops.generate_scene_video_refs(scene, orientation, request_id=rid)
@@ -381,7 +381,7 @@ async def _recover_entity_not_found(req: dict) -> bool:
     prefix = "vertical" if orientation == "VERTICAL" else "horizontal"
 
     # Scene-based requests: re-upload scene image
-    if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+    if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
         scene = await crud.get_scene(req.get("scene_id"))
         if not scene:
             return False
@@ -491,7 +491,7 @@ async def _mark_scene_failed(req: dict):
     updates = {}
     if req_type in ("GENERATE_IMAGE", "REGENERATE_IMAGE", "EDIT_IMAGE"):
         updates[f"{prefix}_image_status"] = "FAILED"
-    elif req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
+    elif req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
         updates[f"{prefix}_video_status"] = "FAILED"
     elif req_type == "UPSCALE_VIDEO":
         updates[f"{prefix}_upscale_status"] = "FAILED"
@@ -508,7 +508,7 @@ async def _is_already_completed(req: dict, orientation: str) -> bool:
     if not scene:
         return False
     prefix = "vertical" if orientation == "VERTICAL" else "horizontal"
-    if req_type in ("EDIT_IMAGE", "REGENERATE_IMAGE", "REGENERATE_CHARACTER_IMAGE", "EDIT_CHARACTER_IMAGE"):
+    if req_type in ("EDIT_IMAGE", "REGENERATE_IMAGE", "REGENERATE_VIDEO", "REGENERATE_CHARACTER_IMAGE", "EDIT_CHARACTER_IMAGE"):
         return False  # Always run — explicitly requesting new generation
     if req_type == "GENERATE_IMAGE":
         return scene.get(f"{prefix}_image_status") == "COMPLETED"

@@ -26,6 +26,7 @@ curl -s http://127.0.0.1:8100/health
 | `/gla:gen-videos` | Generate scene videos |
 | `/gla:gen-chain-videos` | Videos with scene chaining transitions |
 | `/gla:review-video` | Review video quality before upscale |
+| `/gla:review-board` | Visual scene review board for feedback |
 | `/gla:concat` | Download + concat final video |
 | `/gla:concat-fit-narrator` | Concat trimmed to narrator duration |
 | `/gla:gen-narrator` | Generate narrator text + TTS |

@@ -64,7 +64,7 @@ async def apply_scene_result(
                 scene["parent_scene_id"],
                 **{f"{p}_end_scene_media_id": result.media_id},
             )
-    elif req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
+    elif req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS"):
         updates.update({
             f"{p}_video_media_id": result.media_id,
             f"{p}_video_url": result.url,

@@ -62,7 +62,7 @@ def _extract_media_id(result: dict, req_type: str) -> str:
                 logger.warning("media[0].name is not UUID format: %s", name[:30])
             return None
 
-    if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+    if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
         ops = data.get("operations", [])
         if ops:
             video_meta = ops[0].get("operation", {}).get("metadata", {}).get("video", {})
@@ -97,7 +97,7 @@ def _extract_output_url(result: dict, req_type: str) -> str:
             gen = media[0].get("image", {}).get("generatedImage", {})
             return gen.get("fifeUrl", gen.get("imageUri", gen.get("encodedImage", "")))
 
-    if req_type in ("GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+    if req_type in ("GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
         ops = data.get("operations", [])
         if ops:
             video_meta = ops[0].get("operation", {}).get("metadata", {}).get("video", {})

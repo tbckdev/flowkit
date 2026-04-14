@@ -21,7 +21,7 @@ class RequestCreate(BaseModel):
             if not self.project_id:
                 raise ValueError(f"project_id is required for {req_type}")
         elif req_type in ("GENERATE_IMAGE", "REGENERATE_IMAGE", "EDIT_IMAGE",
-                          "GENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
+                          "GENERATE_VIDEO", "REGENERATE_VIDEO", "GENERATE_VIDEO_REFS", "UPSCALE_VIDEO"):
             if not self.scene_id:
                 raise ValueError(f"scene_id is required for {req_type}")
             if not self.project_id:
