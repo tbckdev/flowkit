@@ -2,6 +2,60 @@
 
 Standalone system to generate AI videos via Google Flow API. Uses a Chrome extension as browser bridge for authentication, reCAPTCHA solving, and API proxying.
 
+## Showcase
+
+All outputs below were generated end-to-end by this system — from story concept to final YouTube-ready video with thumbnails, narration, and branding.
+
+### Generated YouTube Thumbnails
+
+<p align="center">
+  <img src="docs/images/thumbnail_hormuz.jpg" width="400" alt="Hormuz Strait naval blockade thumbnail" />
+  <img src="docs/images/thumbnail_f15e_rescue.jpg" width="400" alt="F-15E pilot rescue thumbnail" />
+</p>
+<p align="center">
+  <img src="docs/images/thumbnail_operation_resolve.jpg" width="400" alt="Operation Absolute Resolve thumbnail" />
+  <img src="docs/images/thumbnail_tapalpa.jpg" width="400" alt="Tapalpa cartel operation thumbnail" />
+</p>
+<p align="center">
+  <img src="docs/images/thumbnail_north_korea.jpg" width="400" alt="North Korea defection thumbnail" />
+  <img src="docs/images/thumbnail_iran_israel.jpg" width="400" alt="Iran vs Israel conflict thumbnail" />
+</p>
+
+### AI-Generated Character Reference & Scene Image
+
+<p align="center">
+  <img src="docs/images/ref_character_example.jpg" width="300" alt="Character reference image — consistent across all scenes" />
+  <img src="docs/images/scene_image_example.jpg" width="500" alt="Scene image generated using character references" />
+</p>
+
+<sub>Left: Character reference image (generated once, used across all scenes for consistency). Right: Scene image composed using reference images as visual input.</sub>
+
+### Channel Branding (Auto-Generated Intro & Outro)
+
+<p align="center">
+  <img src="docs/images/branding_intro.jpg" width="400" alt="Auto-generated channel intro" />
+  <img src="docs/images/branding_outro.jpg" width="400" alt="Auto-generated channel outro" />
+</p>
+
+### What the Pipeline Produces
+
+Each project goes through: **story → entities → reference images → scene images → 8s video clips → narration (TTS) → concat → thumbnails → YouTube upload** — all orchestrated via API or AI agent skills.
+
+| Output | Description |
+|--------|-------------|
+| Reference images | One per character/location/prop — maintains visual consistency |
+| Scene images | Composed using all referenced entities |
+| 8-second video clips | Generated from scene images with camera motion + sound effects |
+| 4K upscale | Optional upscale to 4K resolution |
+| Narrator TTS | Voice-cloned narration per scene |
+| Final video | All clips concatenated, trimmed to narrator timing |
+| Thumbnails | YouTube-optimized with text overlays + branding |
+| YouTube metadata | SEO-optimized title, description, tags, hashtags |
+
+---
+
+## Architecture
+
 ```
 ┌──────────────────┐     WebSocket      ┌──────────────────────┐
 │  Python Agent    │◄──────────────────►│  Chrome Extension     │
