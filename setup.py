@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 SKILLS_DIR = ROOT / "skills"
 CLAUDE_COMMANDS_DIR = ROOT / ".claude" / "commands"
-GEMINI_COMMANDS_DIR = ROOT / ".gemini" / "commands" / "gla"
+GEMINI_COMMANDS_DIR = ROOT / ".gemini" / "commands" / "fk"
 AGENTS_MD = ROOT / "AGENTS.md"
 GEMINI_MD = ROOT / "GEMINI.md"
 STATE_FILE = ROOT / ".fk-setup.json"

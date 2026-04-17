@@ -28,12 +28,12 @@ curl -s http://127.0.0.1:8100/health
 13. **Scenes are mutable** — use `PATCH /api/scenes/{sid}` to update `prompt`, `video_prompt`, `narrator_text`, `character_names` after creation. Don't delete and recreate — patch instead.
 14. **Fact-check before scripting** — ALWAYS research events via web search before writing project stories, scene prompts, or narrator text. Facts (events, dates, names, operations, outcomes) MUST match real sources. Editorial opinion and analysis are allowed but must be framed as such. Never invent events, operation names, or statistics.
 15. **Real-people bypass** — when characters are based on real famous people (politicians, celebrities, military leaders), NEVER use their real name as entity `name` or anywhere in `description`, `image_prompt`, `prompt`, or `video_prompt`. AI image generators reject known public figures. Instead: (a) use a **role-based alias** as entity name (e.g. "Tổng Tư Lệnh" not "Trump", "Thủ Tướng Sắt" not "Netanyahu"), (b) describe **physical appearance only** — distinctive hair, face shape, build, clothing style — without naming who it is, (c) `narrator_text` may use real titles/roles for storytelling but real names never flow into image/video generation. Keep a `real_reference` mapping in the project plan file (`.omc/research/`) for internal tracking.
-16. **Review before upscale** — ALWAYS run `/gla:review-video` (light mode) after video generation, before upscaling. Scenes scoring < 7.5 get `video_prompt` updated from review errors, then regen video. Max 2 review-regen cycles.
+16. **Review before upscale** — ALWAYS run `/fk-review-video` (light mode) after video generation, before upscaling. Scenes scoring < 7.5 get `video_prompt` updated from review errors, then regen video. Max 2 review-regen cycles.
 
 ## Pipeline Order
 
 ```
-0. Research          /gla:research "topic" (fact-check via web search, save to .omc/research/)
+0. Research          /fk-research "topic" (fact-check via web search, save to .omc/research/)
 1. Health check      GET  /health → extension_connected: true
 2. Create project    POST /api/projects (with entities + material, story from research)
 3. Create video      POST /api/videos
@@ -74,32 +74,32 @@ For full API reference, workflow recipes, and video prompt guidelines, see `CLAU
 
 ## Skills
 
-This project has reusable skills in `skills/`. When the user says `/gla:<name>`, read `skills/gla:<name>.md` and follow the instructions inside.
+This project has reusable skills in `skills/`. When the user says `/fk:<name>`, read `skills/fk:<name>.md` and follow the instructions inside.
 
 | Skill | Purpose |
 |-------|---------|
-| `/gla:add-material` | gla:add-material — Image Material System |
-| `/gla:brand-logo` | gla:brand-logo — Apply Channel Brand Logo to Video & Thumbnails |
-| `/gla:camera-guide` | Camera Guide — Cinematic Video Prompts |
-| `/gla:concat-fit-narrator` | Trim each scene video to fit its TTS narrator duration, then concatenate into a final video. |
-| `/gla:concat` | Download and concatenate all scene videos into a single video with optional TTS narration. |
-| `/gla:create-project` | Create a new Google Flow video project. Ask the user for: |
-| `/gla:creative-mix` | Creative video mixing — combine techniques for cinematic results. |
-| `/gla:dashboard` | Show live GLA status in Claude Code statusline. |
-| `/gla:fix-uuids` | Find and fix any non-UUID media_ids (CAMS... format) across all scenes and entities. |
-| `/gla:gen-chain-videos` | Generate videos with automatic scene chaining (start+end frame transitions). |
-| `/gla:gen-images` | Generate scene images for all scenes in a video. |
-| `/gla:gen-music` | gla:gen-music — Generate Music via Suno |
-| `/gla:gen-narrator` | gla:gen-narrator — Generate Narrator Text + TTS for All Scenes |
-| `/gla:gen-refs` | Generate reference images for all entities in a project. |
-| `/gla:gen-tts-template` | gla:gen-tts-template — Generate Voice Template |
-| `/gla:gen-tts` | gla:gen-tts — Generate TTS Narration |
-| `/gla:gen-videos` | Generate videos for all scenes in a video. |
-| `/gla:insert-scene` | Insert new scene(s) into an existing video chain — for multi-angle shots, cutaways, or close-ups. |
-| `/gla:research` | Fact-check & research real events via web search before scripting documentary content. |
-| `/gla:review-video` | Review AI-generated scene videos for quality using Claude Vision. |
-| `/gla:status` | Show full status dashboard for a project. |
-| `/gla:thumbnail-guide` | YouTube Thumbnail Guide — Hook-Worthy Design Rules |
-| `/gla:thumbnail` | Generate 4 YouTube-optimized thumbnail variants for a project video. |
-| `/gla:youtube-seo` | gla:youtube-seo — Generate YouTube Metadata (SEO-Optimized) |
-| `/gla:youtube-upload` | gla:youtube-upload — Upload Video to YouTube (Shorts + Long-form) |
+| `/fk-add-material` | fk-add-material — Image Material System |
+| `/fk-brand-logo` | fk-brand-logo — Apply Channel Brand Logo to Video & Thumbnails |
+| `/fk-camera-guide` | Camera Guide — Cinematic Video Prompts |
+| `/fk-concat-fit-narrator` | Trim each scene video to fit its TTS narrator duration, then concatenate into a final video. |
+| `/fk-concat` | Download and concatenate all scene videos into a single video with optional TTS narration. |
+| `/fk-create-project` | Create a new Google Flow video project. Ask the user for: |
+| `/fk-creative-mix` | Creative video mixing — combine techniques for cinematic results. |
+| `/fk-dashboard` | Show live GLA status in Claude Code statusline. |
+| `/fk-fix-uuids` | Find and fix any non-UUID media_ids (CAMS... format) across all scenes and entities. |
+| `/fk-gen-chain-videos` | Generate videos with automatic scene chaining (start+end frame transitions). |
+| `/fk-gen-images` | Generate scene images for all scenes in a video. |
+| `/fk-gen-music` | fk-gen-music — Generate Music via Suno |
+| `/fk-gen-narrator` | fk-gen-narrator — Generate Narrator Text + TTS for All Scenes |
+| `/fk-gen-refs` | Generate reference images for all entities in a project. |
+| `/fk-gen-tts-template` | fk-gen-tts-template — Generate Voice Template |
+| `/fk-gen-tts` | fk-gen-tts — Generate TTS Narration |
+| `/fk-gen-videos` | Generate videos for all scenes in a video. |
+| `/fk-insert-scene` | Insert new scene(s) into an existing video chain — for multi-angle shots, cutaways, or close-ups. |
+| `/fk-research` | Fact-check & research real events via web search before scripting documentary content. |
+| `/fk-review-video` | Review AI-generated scene videos for quality using Claude Vision. |
+| `/fk-status` | Show full status dashboard for a project. |
+| `/fk-thumbnail-guide` | YouTube Thumbnail Guide — Hook-Worthy Design Rules |
+| `/fk-thumbnail` | Generate 4 YouTube-optimized thumbnail variants for a project video. |
+| `/fk-youtube-seo` | fk-youtube-seo — Generate YouTube Metadata (SEO-Optimized) |
+| `/fk-youtube-upload` | fk-youtube-upload — Upload Video to YouTube (Shorts + Long-form) |

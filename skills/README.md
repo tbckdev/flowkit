@@ -6,32 +6,32 @@ Workflow skills for AI agents and humans. Each skill is a step-by-step recipe.
 
 | # | Skill | File | Description |
 |---|-------|------|-------------|
-| 1 | `fk:create-project` | [fk:create-project.md](fk:create-project.md) | Create project + entities + video + scenes |
-| 2 | `fk:gen-refs` | [fk:gen-refs.md](fk:gen-refs.md) | Generate reference images for all entities |
-| 3 | `fk:gen-images` | [fk:gen-images.md](fk:gen-images.md) | Generate scene images with character refs |
-| 4 | `fk:gen-videos` | [fk:gen-videos.md](fk:gen-videos.md) | Generate videos from scene images |
-| 5 | `fk:concat` | [fk:concat.md](fk:concat.md) | Download + merge all scene videos |
+| 1 | `fk-create-project` | [fk-create-project.md](fk-create-project.md) | Create project + entities + video + scenes |
+| 2 | `fk-gen-refs` | [fk-gen-refs.md](fk-gen-refs.md) | Generate reference images for all entities |
+| 3 | `fk-gen-images` | [fk-gen-images.md](fk-gen-images.md) | Generate scene images with character refs |
+| 4 | `fk-gen-videos` | [fk-gen-videos.md](fk-gen-videos.md) | Generate videos from scene images |
+| 5 | `fk-concat` | [fk-concat.md](fk-concat.md) | Download + merge all scene videos |
 
 ## Advanced Video
 
 | Skill | File | Description |
 |-------|------|-------------|
-| `fk:gen-chain-videos` | [fk:gen-chain-videos.md](fk:gen-chain-videos.md) | Auto start+end frame chaining for smooth transitions |
-| `fk:insert-scene` | [fk:insert-scene.md](fk:insert-scene.md) | Multi-angle shots, cutaways, close-ups |
-| `fk:creative-mix` | [fk:creative-mix.md](fk:creative-mix.md) | Analyze story + suggest all techniques combined |
+| `fk-gen-chain-videos` | [fk-gen-chain-videos.md](fk-gen-chain-videos.md) | Auto start+end frame chaining for smooth transitions |
+| `fk-insert-scene` | [fk-insert-scene.md](fk-insert-scene.md) | Multi-angle shots, cutaways, close-ups |
+| `fk-creative-mix` | [fk-creative-mix.md](fk-creative-mix.md) | Analyze story + suggest all techniques combined |
 
 ## Reference
 
 | Skill | File | Description |
 |-------|------|-------------|
-| `fk:camera-guide` | [fk:camera-guide.md](fk:camera-guide.md) | Camera angles, movements, lighting, DOF for cinematic video prompts |
+| `fk-camera-guide` | [fk-camera-guide.md](fk-camera-guide.md) | Camera angles, movements, lighting, DOF for cinematic video prompts |
 
 ## Utilities
 
 | Skill | File | Description |
 |-------|------|-------------|
-| `fk:status` | [fk:status.md](fk:status.md) | Full project dashboard + next action |
-| `fk:fix-uuids` | [fk:fix-uuids.md](fk:fix-uuids.md) | Repair any CAMS... media_ids to UUID format |
+| `fk-status` | [fk-status.md](fk-status.md) | Full project dashboard + next action |
+| `fk-fix-uuids` | [fk-fix-uuids.md](fk-fix-uuids.md) | Repair any CAMS... media_ids to UUID format |
 
 ## Cross-Tool Compatibility
 
@@ -58,7 +58,7 @@ python setup.py clean     # Remove generated configs
 
 This walkthrough shows exactly how an AI agent uses skills to go from idea to final video.
 
-### 1. `/fk:create-project`
+### 1. `/fk-create-project`
 
 **Agent asks:** What's your project? Characters, locations, key objects, scenes, orientation?
 
@@ -138,11 +138,11 @@ curl -X POST http://127.0.0.1:8100/api/scenes -H "Content-Type: application/json
 # → scene_id: "s-3"
 ```
 
-**Agent says:** "Project created with 4 entities and 3 scenes. Run `/fk:gen-refs p-xxx` to generate reference images."
+**Agent says:** "Project created with 4 entities and 3 scenes. Run `/fk-gen-refs p-xxx` to generate reference images."
 
 ---
 
-### 2. `/fk:gen-refs p-xxx`
+### 2. `/fk-gen-refs p-xxx`
 
 **Agent executes** (one at a time, waits for each):
 
@@ -165,12 +165,12 @@ All 4 references ready:
   Chocolate River       location       media_id=c9d0e1f2-...  ✓
   Gummy Bear Mountain   location       media_id=a3b4c5d6-...  ✓
 
-Run /fk:gen-images p-xxx v-xxx to generate scene images.
+Run /fk-gen-images p-xxx v-xxx to generate scene images.
 ```
 
 ---
 
-### 3. `/fk:gen-images p-xxx v-xxx`
+### 3. `/fk-gen-images p-xxx v-xxx`
 
 **Agent pre-checks:** All 4 refs have UUID media_id ✓
 
@@ -191,12 +191,12 @@ All 3 scene images ready:
   Scene 2: image=OK  media_id=b5a6c7d8-...
   Scene 3: image=OK  media_id=e9f0a1b2-...
 
-Run /fk:gen-videos p-xxx v-xxx to generate videos.
+Run /fk-gen-videos p-xxx v-xxx to generate videos.
 ```
 
 ---
 
-### 4. `/fk:gen-videos p-xxx v-xxx`
+### 4. `/fk-gen-videos p-xxx v-xxx`
 
 **Agent pre-checks:** All 3 scenes have UUID image media_id ✓
 
@@ -217,12 +217,12 @@ All 3 videos ready:
   Scene 2: video=OK  url=https://storage.googleapis.com/...
   Scene 3: video=OK  url=https://storage.googleapis.com/...
 
-Run /fk:concat v-xxx to download and merge.
+Run /fk-concat v-xxx to download and merge.
 ```
 
 ---
 
-### 5. `/fk:concat v-xxx`
+### 5. `/fk-concat v-xxx`
 
 ```
 Getting output dir from API...
